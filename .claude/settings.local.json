@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm build)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm type-check)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(pnpm add *)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\jeffesson.almeida\\\\Documents\\\\Projetos\\\\silver-octo-spoon\\\\backend\" -Recurse -Force | Select-Object FullName | ForEach-Object { $_.FullName -replace [regex]::Escape\\(\"c:\\\\Users\\\\jeffesson.almeida\\\\Documents\\\\Projetos\\\\silver-octo-spoon\\\\backend\"\\), \".\" } | Sort-Object)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\jeffesson.almeida\\\\Documents\\\\Projetos\\\\silver-octo-spoon\\\\backend\\\\src\" -Recurse | Select-Object @{n='Path';e={$_.FullName -replace \"c:\\\\Users\\\\jeffesson.almeida\\\\Documents\\\\Projetos\\\\silver-octo-spoon\\\\backend\\\\src\", \"src\"}} | Sort-Object Path | ForEach-Object { $_.Path })",
+      "Bash(npx vitest *)",
+      "Bash(pnpm vitest *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\jeffesson.almeida\\\\Documents\\\\Projetos\\\\silver-octo-spoon\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Get-Process | Where-Object { $_.Name -match \"node\" } | Select-Object Id, Name, CPU, StartTime)"
+    ]
+  }
+}

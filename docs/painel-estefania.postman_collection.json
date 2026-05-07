@@ -1,0 +1,544 @@
+{
+  "info": {
+    "name": "Painel Estefania API",
+    "description": "Backend de gerenciamento de fases, tarefas e observações por cliente.\n\nAutenticação: header `X-Client-ID` com o ID do cliente (ex: `estefania`).\nRotas de criação de cliente não exigem autenticação.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "clienteId",
+      "value": "estefania",
+      "type": "string"
+    },
+    {
+      "key": "faseId",
+      "value": "fase-01",
+      "type": "string"
+    },
+    {
+      "key": "tarefaId",
+      "value": "tarefa-abc123",
+      "type": "string"
+    },
+    {
+      "key": "materialId",
+      "value": "mat-abc123",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-Client-ID",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{clienteId}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "Criar cliente",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"estefania\",\n  \"nome\": \"Estefania Silva\",\n  \"descricao\": \"Cliente de design de interiores\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes"]
+            },
+            "description": "Cria um novo cliente. Campos obrigatórios: `id`, `nome`. Não exige autenticação."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar clientes",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes"]
+            },
+            "description": "Lista todos os clientes ativos. Não exige autenticação."
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar cliente por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}"]
+            },
+            "description": "Retorna um cliente pelo ID. Exige header `X-Client-ID`."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar cliente",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Estefania Silva Atualizada\",\n  \"descricao\": \"Descrição atualizada\",\n  \"ativo\": true\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}"]
+            },
+            "description": "Atualiza dados de um cliente. Todos os campos do body são opcionais."
+          },
+          "response": []
+        },
+        {
+          "name": "Remover cliente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}"]
+            },
+            "description": "Remove um cliente. Retorna 204 em caso de sucesso."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Painel",
+      "item": [
+        {
+          "name": "Buscar painel do cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/painel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "painel"]
+            },
+            "description": "Retorna o painel completo do cliente com fases, tarefas e biblioteca de materiais."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Fases",
+      "item": [
+        {
+          "name": "Listar fases do cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/fases",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "fases"]
+            },
+            "description": "Lista todas as fases do cliente."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar fase",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numero\": \"01\",\n  \"titulo\": \"Briefing\",\n  \"resumo\": \"Levantamento inicial de informações com o cliente\",\n  \"status\": \"pending\",\n  \"tipo\": null\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/fases",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "fases"]
+            },
+            "description": "Cria uma nova fase para o cliente. Campos obrigatórios: `numero`, `titulo`.\n\n`status`: `done` | `active` | `pending`\n`tipo`: `extra` | `null`"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar fase por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/fases/{{faseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "fases", "{{faseId}}"]
+            },
+            "description": "Retorna uma fase pelo ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar fase",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Briefing Atualizado\",\n  \"resumo\": \"Resumo atualizado\",\n  \"status\": \"active\",\n  \"tipo\": null\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/fases/{{faseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "fases", "{{faseId}}"]
+            },
+            "description": "Atualiza uma fase. Todos os campos do body são opcionais.\n\n`status`: `done` | `active` | `pending`\n`tipo`: `extra` | `null`"
+          },
+          "response": []
+        },
+        {
+          "name": "Remover fase",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/fases/{{faseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "fases", "{{faseId}}"]
+            },
+            "description": "Remove uma fase. Retorna 204 em caso de sucesso."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tarefas",
+      "item": [
+        {
+          "name": "Listar tarefas da fase",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/fases/{{faseId}}/tarefas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "fases", "{{faseId}}", "tarefas"]
+            },
+            "description": "Lista todas as tarefas de uma fase."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar tarefa na fase",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"texto\": \"Revisar briefing com o cliente\",\n  \"concluida\": false\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/fases/{{faseId}}/tarefas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "fases", "{{faseId}}", "tarefas"]
+            },
+            "description": "Cria uma tarefa em uma fase. Campo obrigatório: `texto`."
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar tarefa por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/tarefas/{{tarefaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "tarefas", "{{tarefaId}}"]
+            },
+            "description": "Retorna uma tarefa pelo ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar tarefa",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"texto\": \"Texto atualizado da tarefa\",\n  \"concluida\": true\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/tarefas/{{tarefaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "tarefas", "{{tarefaId}}"]
+            },
+            "description": "Atualiza uma tarefa. Todos os campos do body são opcionais."
+          },
+          "response": []
+        },
+        {
+          "name": "Remover tarefa",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/tarefas/{{tarefaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "tarefas", "{{tarefaId}}"]
+            },
+            "description": "Remove uma tarefa. Retorna 204 em caso de sucesso."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Observações",
+      "item": [
+        {
+          "name": "Buscar observação da tarefa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/tarefas/{{tarefaId}}/observacao",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "tarefas", "{{tarefaId}}", "observacao"]
+            },
+            "description": "Retorna a observação de uma tarefa."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar ou atualizar observação (upsert)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observacao\": \"Cliente solicitou revisão do prazo de entrega\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/tarefas/{{tarefaId}}/observacao",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "tarefas", "{{tarefaId}}", "observacao"]
+            },
+            "description": "Cria ou atualiza a observação de uma tarefa (upsert). Campo obrigatório: `observacao`."
+          },
+          "response": []
+        },
+        {
+          "name": "Remover observação",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/tarefas/{{tarefaId}}/observacao",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "tarefas", "{{tarefaId}}", "observacao"]
+            },
+            "description": "Remove a observação de uma tarefa. Retorna 204 em caso de sucesso."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Materiais",
+      "item": [
+        {
+          "name": "Listar biblioteca do cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/biblioteca",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "biblioteca"]
+            },
+            "description": "Lista todos os materiais da biblioteca do cliente."
+          },
+          "response": []
+        },
+        {
+          "name": "Adicionar material à biblioteca",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Contrato de Prestação de Serviços\",\n  \"tipo\": \"PDF\",\n  \"url\": \"https://drive.google.com/file/exemplo\",\n  \"pendente\": false\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/biblioteca",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "biblioteca"]
+            },
+            "description": "Adiciona um material à biblioteca do cliente. Campos obrigatórios: `nome`, `tipo`.\n\n`tipo`: `PDF` | `PNG` | `DOC` | `XLS` | `LINK` | `VIDEO`"
+          },
+          "response": []
+        },
+        {
+          "name": "Adicionar material à fase",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Apresentação de Resultados\",\n  \"tipo\": \"PDF\",\n  \"url\": \"https://drive.google.com/file/apresentacao\",\n  \"pendente\": true\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/fases/{{faseId}}/materiais",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "fases", "{{faseId}}", "materiais"]
+            },
+            "description": "Adiciona um material a uma fase específica. Campos obrigatórios: `nome`, `tipo`.\n\n`tipo`: `PDF` | `PNG` | `DOC` | `XLS` | `LINK` | `VIDEO`"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar material",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Contrato Revisado\",\n  \"tipo\": \"PDF\",\n  \"url\": \"https://drive.google.com/file/contrato-v2\",\n  \"pendente\": false\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/materiais/{{materialId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "materiais", "{{materialId}}"]
+            },
+            "description": "Atualiza um material. Todos os campos do body são opcionais.\n\n`tipo`: `PDF` | `PNG` | `DOC` | `XLS` | `LINK` | `VIDEO`"
+          },
+          "response": []
+        },
+        {
+          "name": "Remover material",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/materiais/{{materialId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "{{clienteId}}", "materiais", "{{materialId}}"]
+            },
+            "description": "Remove um material. Retorna 204 em caso de sucesso."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

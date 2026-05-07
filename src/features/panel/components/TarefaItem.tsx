@@ -1,0 +1,97 @@
+import { useDebouncedSave } from '../../../hooks/useDebouncedSave'
+import type { Tarefa } from '../types'
+
+interface TarefaItemProps {
+  tarefa: Tarefa
+  concluida: boolean
+  observacao: string
+  obsAberta: boolean
+  oculta: boolean
+  onToggleConcluida: (id: string) => void
+  onToggleObs: (id: string) => void
+  onChangeObservacao: (id: string, valor: string) => void
+}
+
+export const TarefaItem = ({
+  tarefa,
+  concluida,
+  observacao,
+  obsAberta,
+  oculta,
+  onToggleConcluida,
+  onToggleObs,
+  onChangeObservacao,
+}: TarefaItemProps) => {
+  const temObs = observacao.trim().length > 0
+  const { status, schedule } = useDebouncedSave<string>((valor) =>
+    onChangeObservacao(tarefa.id, valor),
+  )
+
+  const handleCheckboxClick = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    onToggleConcluida(tarefa.id)
+  }
+
+  const handleCheckboxKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      event.stopPropagation()
+      onToggleConcluida(tarefa.id)
+    }
+  }
+
+  const liClassName = [
+    'task',
+    concluida ? 'done' : '',
+    obsAberta ? 'obs-open' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  return (
+    <li
+      className={liClassName}
+      data-testid={`task-${tarefa.id}`}
+      style={oculta ? { display: 'none' } : undefined}
+    >
+      <div className="task-header">
+        <div
+          className="task-checkbox"
+          role="checkbox"
+          aria-checked={concluida}
+          tabIndex={0}
+          data-testid={`chk-toggle-tarefa-${tarefa.id}`}
+          onClick={handleCheckboxClick}
+          onKeyDown={handleCheckboxKeyDown}
+        />
+        <div className="task-content">
+          <div className="task-text">{tarefa.texto}</div>
+          <button
+            type="button"
+            className={`task-obs-toggle ${temObs ? 'has-content' : ''}`}
+            data-testid={`btn-toggle-obs-${tarefa.id}`}
+            onClick={() => onToggleObs(tarefa.id)}
+          >
+            {temObs ? '✎ Observação' : '+ Adicionar observação'}
+          </button>
+          <div className="task-obs-area">
+            <textarea
+              className="task-obs-textarea"
+              data-testid={`input-edit-obs-${tarefa.id}`}
+              placeholder="Anote qualquer coisa: o que rolou, dúvidas, próximos passos..."
+              defaultValue={observacao}
+              onChange={(e) => schedule(e.target.value)}
+            />
+            <div
+              className={`task-obs-status ${status === 'idle' ? '' : 'visible'} ${status === 'saved' ? 'saved' : ''} ${status === 'saving' ? 'saving' : ''}`}
+              data-testid={`status-obs-${tarefa.id}`}
+            >
+              <span className="task-obs-status-dot"></span>
+              <span>{status === 'saving' ? 'Salvando...' : 'Salvo'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </li>
+  )
+}
