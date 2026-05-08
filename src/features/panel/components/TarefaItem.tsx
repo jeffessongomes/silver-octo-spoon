@@ -1,9 +1,11 @@
 import { useDebouncedSave } from '../../../hooks/useDebouncedSave'
+import { useAdminMode } from '../context/AdminModeContext'
 import type { Tarefa } from '../types'
 
 interface TarefaItemProps {
   tarefa: Tarefa
   concluida: boolean
+  isToggling: boolean
   observacao: string
   obsAberta: boolean
   oculta: boolean
@@ -15,6 +17,7 @@ interface TarefaItemProps {
 export const TarefaItem = ({
   tarefa,
   concluida,
+  isToggling,
   observacao,
   obsAberta,
   oculta,
@@ -22,6 +25,7 @@ export const TarefaItem = ({
   onToggleObs,
   onChangeObservacao,
 }: TarefaItemProps) => {
+  const { isAdmin } = useAdminMode()
   const temObs = observacao.trim().length > 0
   const { status, schedule } = useDebouncedSave<string>((valor) =>
     onChangeObservacao(tarefa.id, valor),
@@ -59,37 +63,55 @@ export const TarefaItem = ({
           className="task-checkbox"
           role="checkbox"
           aria-checked={concluida}
-          tabIndex={0}
+          aria-disabled={isToggling ? true : undefined}
+          tabIndex={isAdmin ? 0 : undefined}
           data-testid={`chk-toggle-tarefa-${tarefa.id}`}
-          onClick={handleCheckboxClick}
-          onKeyDown={handleCheckboxKeyDown}
+          onClick={isAdmin && !isToggling ? handleCheckboxClick : undefined}
+          onKeyDown={isAdmin && !isToggling ? handleCheckboxKeyDown : undefined}
         />
         <div className="task-content">
           <div className="task-text">{tarefa.texto}</div>
-          <button
-            type="button"
-            className={`task-obs-toggle ${temObs ? 'has-content' : ''}`}
-            data-testid={`btn-toggle-obs-${tarefa.id}`}
-            onClick={() => onToggleObs(tarefa.id)}
-          >
-            {temObs ? '✎ Observação' : '+ Adicionar observação'}
-          </button>
-          <div className="task-obs-area">
-            <textarea
-              className="task-obs-textarea"
-              data-testid={`input-edit-obs-${tarefa.id}`}
-              placeholder="Anote qualquer coisa: o que rolou, dúvidas, próximos passos..."
-              defaultValue={observacao}
-              onChange={(e) => schedule(e.target.value)}
-            />
-            <div
-              className={`task-obs-status ${status === 'idle' ? '' : 'visible'} ${status === 'saved' ? 'saved' : ''} ${status === 'saving' ? 'saving' : ''}`}
-              data-testid={`status-obs-${tarefa.id}`}
-            >
-              <span className="task-obs-status-dot"></span>
-              <span>{status === 'saving' ? 'Salvando...' : 'Salvo'}</span>
-            </div>
-          </div>
+          {isAdmin ? (
+            <>
+              <button
+                type="button"
+                className={`task-obs-toggle ${temObs ? 'has-content' : ''}`}
+                data-testid={`btn-toggle-obs-${tarefa.id}`}
+                onClick={() => onToggleObs(tarefa.id)}
+              >
+                {temObs ? '✎ Observação' : '+ Adicionar observação'}
+              </button>
+              <div className="task-obs-area">
+                {obsAberta && (
+                  <>
+                    <textarea
+                      className="task-obs-textarea"
+                      data-testid={`input-edit-obs-${tarefa.id}`}
+                      placeholder="Anote qualquer coisa: o que rolou, dúvidas, próximos passos..."
+                      defaultValue={observacao}
+                      onChange={(e) => schedule(e.target.value)}
+                    />
+                    <div
+                      className={`task-obs-status ${status === 'idle' ? '' : 'visible'} ${status === 'saved' ? 'saved' : ''} ${status === 'saving' ? 'saving' : ''}`}
+                      data-testid={`status-obs-${tarefa.id}`}
+                    >
+                      <span className="task-obs-status-dot"></span>
+                      <span>{status === 'saving' ? 'Salvando...' : 'Salvo'}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          ) : (
+            temObs && (
+              <p
+                className="task-obs-readonly"
+                data-testid={`obs-readonly-${tarefa.id}`}
+              >
+                {observacao}
+              </p>
+            )
+          )}
         </div>
       </div>
     </li>

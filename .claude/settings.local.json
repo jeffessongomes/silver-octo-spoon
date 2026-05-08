@@ -18,7 +18,13 @@
       "Bash(pnpm vitest *)",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\jeffesson.almeida\\\\Documents\\\\Projetos\\\\silver-octo-spoon\" -Recurse -Directory)",
       "Bash(Select-Object FullName)",
-      "PowerShell(Get-Process | Where-Object { $_.Name -match \"node\" } | Select-Object Id, Name, CPU, StartTime)"
+      "PowerShell(Get-Process | Where-Object { $_.Name -match \"node\" } | Select-Object Id, Name, CPU, StartTime)",
+      "Bash(mkdir \"c:\\\\Users\\\\jeffesson.almeida\\\\Documents\\\\Projetos\\\\silver-octo-spoon\\\\src\\\\features\\\\panel\\\\context\" 2>&1; echo \"ok\")",
+      "Bash(Select-Object -First 50)",
+      "Bash(npx eslint *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\jeffesson.almeida\\Documents\\Projetos\\silver-octo-spoon\\src\\features\\panel"
     ]
   }
 }

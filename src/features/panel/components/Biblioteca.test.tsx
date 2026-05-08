@@ -270,4 +270,36 @@ describe('Biblioteca', () => {
     expect(screen.getByText('Biblioteca')).toBeInTheDocument()
     expect(screen.getByText('Materiais de consulta')).toBeInTheDocument()
   })
+
+  describe('when isAdmin is false', () => {
+    it('should not render the add material form', async () => {
+      mockUseBiblioteca.mockReturnValue(makeHookIdle())
+      const Biblioteca = await getComponent()
+
+      render(<Biblioteca />, { isAdmin: false })
+
+      expect(screen.queryByTestId('btn-submit-material')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('input-nome-material')).not.toBeInTheDocument()
+    })
+
+    it('should not render delete buttons for materials', async () => {
+      const material = createMaterialAPI({ id: 'mat-abc' })
+      mockUseBiblioteca.mockReturnValue(makeHookIdle({ materiais: [material] }))
+      const Biblioteca = await getComponent()
+
+      render(<Biblioteca />, { isAdmin: false })
+
+      expect(screen.queryByTestId('btn-delete-material-mat-abc')).not.toBeInTheDocument()
+    })
+
+    it('should still render the materials list', async () => {
+      const material = createMaterialAPI({ nome: 'Identidade Visual', url: 'https://exemplo.com/id-visual.pdf' })
+      mockUseBiblioteca.mockReturnValue(makeHookIdle({ materiais: [material] }))
+      const Biblioteca = await getComponent()
+
+      render(<Biblioteca />, { isAdmin: false })
+
+      expect(screen.getByTestId('link-open-biblioteca-identidade-visual')).toBeInTheDocument()
+    })
+  })
 })

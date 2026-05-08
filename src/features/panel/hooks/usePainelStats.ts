@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { EstadoPainel, Fase, FaseStatus } from '../types'
+import type { FaseAPI, FaseStatus } from '../types'
 
 export interface FaseStats {
   concluidas: number
@@ -20,18 +20,16 @@ export const calcularStatusVisual = (concluidas: number, total: number): FaseSta
   return 'pending'
 }
 
-export const usePainelStats = (
-  fases: Fase[],
-  tarefasConcluidas: EstadoPainel['tarefas'],
-): PainelStats => {
+export const usePainelStats = (fases: FaseAPI[]): PainelStats => {
   return useMemo(() => {
     const porFase: Record<string, FaseStats> = {}
     let totalConcluidas = 0
     let totalTarefas = 0
 
     for (const fase of fases) {
-      const concluidas = fase.tarefas.filter((t) => tarefasConcluidas[t.id]).length
-      const total = fase.tarefas.length
+      const tarefas = fase.tarefas ?? []
+      const concluidas = tarefas.filter((t) => t.concluida).length
+      const total = tarefas.length
       porFase[fase.id] = {
         concluidas,
         total,
@@ -44,5 +42,5 @@ export const usePainelStats = (
     const percentual = totalTarefas > 0 ? (totalConcluidas / totalTarefas) * 100 : 0
 
     return { totalConcluidas, totalTarefas, percentual, porFase }
-  }, [fases, tarefasConcluidas])
+  }, [fases])
 }
