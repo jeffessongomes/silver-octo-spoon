@@ -21,7 +21,13 @@
       "PowerShell(Get-Process | Where-Object { $_.Name -match \"node\" } | Select-Object Id, Name, CPU, StartTime)",
       "Bash(mkdir \"c:\\\\Users\\\\jeffesson.almeida\\\\Documents\\\\Projetos\\\\silver-octo-spoon\\\\src\\\\features\\\\panel\\\\context\" 2>&1; echo \"ok\")",
       "Bash(Select-Object -First 50)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(git checkout *)",
+      "Bash(git pull *)",
+      "Bash(git push *)",
+      "Bash(nvm use *)",
+      "Bash(ls /Users/jeffessongomes/.nvm/versions/node/)",
+      "Read(//Users/jeffessongomes/.nvm/versions/node/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\jeffesson.almeida\\Documents\\Projetos\\silver-octo-spoon\\src\\features\\panel"

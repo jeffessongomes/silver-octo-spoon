@@ -13,6 +13,7 @@ const createTarefaAPI = (overrides?: Partial<TarefaAPI>): TarefaAPI => ({
   fase_id: 'fase-1',
   cliente_id: 'estefania',
   concluida: false,
+  observacao: null,
   ordem: 0,
   ...overrides,
 })
@@ -59,6 +60,13 @@ vi.mock('./hooks/useFasesAPI', () => ({
 
 vi.mock('./hooks/useTarefasAPI', () => ({
   useTarefasAPI: mockUseTarefasAPI,
+}))
+
+vi.mock('./hooks/useObservacaoAPI', () => ({
+  useObservacaoAPI: vi.fn(() => ({
+    saving: new Set<string>(),
+    saveObservacao: vi.fn(),
+  })),
 }))
 
 vi.mock('./hooks/useBiblioteca', () => ({
@@ -310,19 +318,20 @@ describe('Painel (integration)', () => {
   })
 
   describe('when isAdmin is false', () => {
-    it('should not call task handler when checkbox is clicked', async () => {
+    it('should call task handler when non-admin user clicks checkbox', async () => {
       const user = userEvent.setup()
+      mockToggleConcluida.mockResolvedValue(undefined)
       renderPainel(false)
 
       await user.click(screen.getByTestId('chk-toggle-tarefa-t1-4'))
 
-      expect(mockToggleConcluida).not.toHaveBeenCalled()
+      expect(mockToggleConcluida).toHaveBeenCalledWith('t1-4', true, expect.any(Function))
     })
 
-    it('should not render observation toggle buttons', () => {
+    it('should render observation toggle buttons for non-admin users', () => {
       renderPainel(false)
 
-      expect(screen.queryByTestId('btn-toggle-obs-t1-4')).not.toBeInTheDocument()
+      expect(screen.getByTestId('btn-toggle-obs-t1-4')).toBeInTheDocument()
     })
 
     it('should not render the biblioteca add form', () => {

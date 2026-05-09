@@ -14,6 +14,8 @@ import { TarefaController } from '../controllers/TarefaController'
 import { ObservacaoController } from '../controllers/ObservacaoController'
 import { MaterialController } from '../controllers/MaterialController'
 import { PainelController } from '../controllers/PainelController'
+import { ImportarPainelController } from '../controllers/ImportarPainelController'
+import { ImportarPainelService } from '../services/ImportarPainelService'
 import { authClienteMiddleware } from '../middleware/auth'
 import { validateBody } from '../middleware/validation'
 
@@ -31,12 +33,15 @@ export function createRouter(): Router {
   const painelService = new PainelService(clienteRepo, faseRepo, matRepo)
   const obsService = new ObservacaoService(obsRepo, tarefaRepo)
 
+  const importarPainelService = new ImportarPainelService(clienteRepo, faseRepo)
+
   const clienteCtrl = new ClienteController(clienteService)
   const faseCtrl = new FaseController(faseService, faseRepo)
   const tarefaCtrl = new TarefaController(faseService, tarefaRepo)
   const obsCtrl = new ObservacaoController(obsService)
   const matCtrl = new MaterialController(matRepo)
   const painelCtrl = new PainelController(painelService)
+  const importarPainelCtrl = new ImportarPainelController(importarPainelService)
 
   /**
    * @swagger
@@ -239,6 +244,10 @@ export function createRouter(): Router {
    */
   router.get('/clientes/:clienteId/painel', authClienteMiddleware, (req, res, next) =>
     painelCtrl.getPainel(req, res, next)
+  )
+
+  router.post('/clientes/:clienteId/painel/importar', authClienteMiddleware, (req, res, next) =>
+    importarPainelCtrl.importarPainel(req, res, next)
   )
 
   /**

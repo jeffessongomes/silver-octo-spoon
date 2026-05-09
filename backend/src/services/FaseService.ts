@@ -47,7 +47,7 @@ export class FaseService {
     await this.faseRepository.recalculateFaseStatus(clienteId, faseId)
     const faseAtualizada = await this.getFaseComTarefas(clienteId, faseId)
 
-    return { tarefa, fase: faseAtualizada }
+    return { tarefa: { ...tarefa, observacao: null }, fase: faseAtualizada }
   }
 
   async toggleTarefaEAtualizarFase(
@@ -61,7 +61,7 @@ export class FaseService {
     await this.faseRepository.recalculateFaseStatus(clienteId, faseId)
     const fase = await this.getFaseComTarefas(clienteId, faseId)
 
-    return { tarefa, fase }
+    return { tarefa: { ...tarefa, observacao: null }, fase }
   }
 
   async updateTarefa(
@@ -77,7 +77,7 @@ export class FaseService {
     }
 
     const fase = await this.getFaseComTarefas(clienteId, faseId)
-    return { tarefa, fase }
+    return { tarefa: { ...tarefa, observacao: null }, fase }
   }
 
   async deleteTarefa(clienteId: string, tarefaId: string, faseId: string): Promise<FaseComTarefas> {

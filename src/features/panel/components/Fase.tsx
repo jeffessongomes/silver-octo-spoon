@@ -22,7 +22,7 @@ interface FaseProps {
   onToggleFase: (id: string) => void
   onToggleTarefa: (id: string, concluida: boolean) => void
   onToggleObs: (id: string) => void
-  onChangeObservacao: (id: string, valor: string) => void
+  onSaveObservacao: (id: string, valor: string) => void
   criarTarefa: (faseId: string, input: CriarTarefaInput, onSuccess: () => void) => Promise<void>
 }
 
@@ -44,7 +44,7 @@ export const Fase = ({
   onToggleFase,
   onToggleTarefa,
   onToggleObs,
-  onChangeObservacao,
+  onSaveObservacao,
   criarTarefa,
 }: FaseProps) => {
   const { isAdmin } = useAdminMode()
@@ -125,40 +125,43 @@ export const Fase = ({
               <TarefaItem
                 key={tarefa.id}
                 tarefa={tarefa}
-                concluida={tarefa.concluida}
                 isToggling={toggling.has(tarefa.id)}
-                observacao={estado.observacoes[tarefa.id] ?? ''}
                 obsAberta={estado.obsAbertas.includes(tarefa.id)}
                 oculta={isTarefaOculta(tarefa.concluida, filtro)}
                 onToggleConcluida={() => onToggleTarefa(tarefa.id, !tarefa.concluida)}
                 onToggleObs={onToggleObs}
-                onChangeObservacao={onChangeObservacao}
+                onSaveObservacao={onSaveObservacao}
               />
             ))}
           </ul>
           {isAdmin && (
             <form
-              className="add-tarefa-form"
+              className="admin-form add-tarefa-form"
               data-testid={`form-add-tarefa-${fase.id}`}
               onSubmit={(e) => { e.preventDefault(); void handleAddTarefa() }}
             >
-              <input
-                type="text"
-                className="add-tarefa-input"
-                data-testid={`input-add-tarefa-${fase.id}`}
-                placeholder="Nova tarefa..."
-                value={novaTarefaTexto}
-                onChange={(e) => setNovaTarefaTexto(e.target.value)}
-              />
-              <button
-                type="submit"
-                data-testid={`btn-add-tarefa-${fase.id}`}
-                disabled={novaTarefaTexto.trim().length < 3 || addingTarefa}
-              >
-                Adicionar
-              </button>
+              <div className="admin-form-row">
+                <input
+                  type="text"
+                  className="admin-input"
+                  data-testid={`input-add-tarefa-${fase.id}`}
+                  placeholder="Descreva a nova tarefa..."
+                  value={novaTarefaTexto}
+                  onChange={(e) => setNovaTarefaTexto(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="admin-btn"
+                  data-testid={`btn-add-tarefa-${fase.id}`}
+                  disabled={novaTarefaTexto.trim().length < 3 || addingTarefa}
+                >
+                  {addingTarefa ? 'Adicionando...' : 'Adicionar'}
+                </button>
+              </div>
               {addTarefaError && (
-                <p data-testid={`error-add-tarefa-${fase.id}`}>{addTarefaError}</p>
+                <p className="admin-form-error" data-testid={`error-add-tarefa-${fase.id}`}>
+                  {addTarefaError}
+                </p>
               )}
             </form>
           )}

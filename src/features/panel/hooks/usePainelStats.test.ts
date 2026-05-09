@@ -9,6 +9,7 @@ const createTarefaAPI = (id: string, concluida = false): TarefaAPI => ({
   fase_id: 'fase-1',
   cliente_id: 'estefania',
   concluida,
+  observacao: null,
   ordem: 0,
 })
 

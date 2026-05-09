@@ -10,6 +10,10 @@ export interface TarefaRow {
   ordem: number
 }
 
+export interface TarefaComObservacao extends TarefaRow {
+  observacao: string | null
+}
+
 export interface MaterialRow {
   id: string
   cliente_id: string
@@ -35,12 +39,13 @@ export interface FaseRow {
 }
 
 export interface FaseComTarefas extends FaseRow {
-  tarefas: TarefaRow[]
+  tarefas: TarefaComObservacao[]
   materiais: MaterialRow[]
 }
 
 export interface CreateTarefaDTO {
   texto: string
+  observacao?: string
 }
 
 export interface CreateMaterialDTO {
@@ -80,8 +85,13 @@ export class FaseRepository extends BaseRepository {
     )
     if (!fase) return null
 
-    const tarefas = await this.queryAll<TarefaRow>(
-      'SELECT * FROM tarefas WHERE fase_id = ? AND cliente_id = ? ORDER BY ordem',
+    const tarefas = await this.queryAll<TarefaComObservacao>(
+      `SELECT t.id, t.fase_id, t.cliente_id, t.texto, t.concluida, t.ordem,
+              o.conteudo AS observacao
+       FROM tarefas t
+       LEFT JOIN observacoes o ON o.tarefa_id = t.id AND o.cliente_id = t.cliente_id
+       WHERE t.fase_id = ? AND t.cliente_id = ?
+       ORDER BY t.ordem`,
       [faseId, clienteId]
     )
 
@@ -110,6 +120,14 @@ export class FaseRepository extends BaseRepository {
           `INSERT INTO tarefas (id, fase_id, cliente_id, texto, ordem) VALUES (?, ?, ?, ?, ?)`,
           [tarefaId, faseId, clienteId, data.tarefas[i].texto, i]
         )
+        const observacao = data.tarefas[i].observacao
+        if (observacao && observacao.trim()) {
+          const obsId = `obs-${tarefaId}-${Date.now()}`
+          await this.execute(
+            `INSERT INTO observacoes (id, tarefa_id, cliente_id, conteudo) VALUES (?, ?, ?, ?)`,
+            [obsId, tarefaId, clienteId, observacao.trim()]
+          )
+        }
       }
 
       for (let i = 0; i < data.materiais.length; i++) {

@@ -25,6 +25,7 @@ const createTarefaAPI = (overrides?: Partial<TarefaAPI>): TarefaAPI => ({
   fase_id: 'fase-1',
   cliente_id: 'estefania',
   concluida: false,
+  observacao: null,
   ordem: 0,
   ...overrides,
 })

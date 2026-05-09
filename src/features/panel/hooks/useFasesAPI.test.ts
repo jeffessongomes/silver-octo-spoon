@@ -18,6 +18,7 @@ const createTarefaAPI = (overrides?: Partial<TarefaAPI>): TarefaAPI => ({
   id: 'tarefa-001',
   texto: 'Combinar com a Juliana sobre o relatório',
   concluida: false,
+  observacao: null,
   ...overrides,
 })
 

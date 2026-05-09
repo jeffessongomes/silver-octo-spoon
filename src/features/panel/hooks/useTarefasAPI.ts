@@ -23,7 +23,7 @@ export function useTarefasAPI(clienteId: string): UseTarefasAPIResult {
       setToggleError(null)
       try {
         await api.patch<ToggleTarefaResponse>(
-          `/api/clientes/${clienteId}/tarefas/${tarefaId}/concluida`,
+          `/api/clientes/${clienteId}/tarefas/${tarefaId}`,
           { concluida },
           { headers: { 'X-Client-ID': clienteId } },
         )

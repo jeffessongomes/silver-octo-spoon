@@ -9,6 +9,7 @@ const createTarefaAPI = (overrides: Partial<TarefaAPI> = {}): TarefaAPI => ({
   fase_id: 'fase-1',
   cliente_id: 'estefania',
   concluida: false,
+  observacao: null,
   ordem: 0,
   ...overrides,
 })
@@ -30,8 +31,6 @@ const createFase = (overrides: Partial<FaseAPI> = {}): FaseAPI => ({
 })
 
 const createEstado = (overrides: Partial<EstadoPainel> = {}): EstadoPainel => ({
-  tarefas: {},
-  observacoes: {},
   expandidas: [],
   obsAbertas: [],
   ...overrides,
@@ -50,7 +49,7 @@ const renderFase = (overrides: Partial<React.ComponentProps<typeof Fase>> = {}) 
     onToggleFase: vi.fn(),
     onToggleTarefa: vi.fn(),
     onToggleObs: vi.fn(),
-    onChangeObservacao: vi.fn(),
+    onSaveObservacao: vi.fn(),
     criarTarefa: vi.fn(),
     ...overrides,
   }
@@ -243,7 +242,7 @@ describe('Fase', () => {
         onToggleFase={vi.fn()}
         onToggleTarefa={vi.fn()}
         onToggleObs={vi.fn()}
-        onChangeObservacao={vi.fn()}
+        onSaveObservacao={vi.fn()}
         criarTarefa={vi.fn()}
       />, { isAdmin: false })
 
