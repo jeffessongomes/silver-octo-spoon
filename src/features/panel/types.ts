@@ -47,6 +47,7 @@ export interface TarefaAPI {
   id: string
   texto: string
   concluida: boolean
+  observacao: string | null
   fase_id?: string
   cliente_id?: string
   ordem?: number
@@ -87,8 +88,37 @@ export interface DadosPainel {
 }
 
 export interface EstadoPainel {
-  tarefas: Record<string, boolean>
-  observacoes: Record<string, string>
   expandidas: string[]
   obsAbertas: string[]
+}
+
+export interface ImportarTarefaInput {
+  texto: string
+  observacao?: string
+}
+
+export interface ImportarFaseInput {
+  numero?: string
+  titulo: string
+  resumo?: string
+  tipo?: FaseTipo
+  tarefas?: ImportarTarefaInput[]
+  materiais?: { nome: string; tipo: MaterialTipo; url: string }[]
+}
+
+export interface ImportarPainelInput {
+  fases: ImportarFaseInput[]
+}
+
+export interface ImportarPainelResponse {
+  importado: number
+  fases: { id: string; titulo: string }[]
+}
+
+export interface ImportarPainelPreview {
+  totalFases: number
+  totalTarefas: number
+  totalObservacoes: number
+  totalMateriais: number
+  fases: { titulo: string; tarefas: number; observacoes: number; materiais: number }[]
 }

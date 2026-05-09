@@ -49,6 +49,7 @@ export class PainelService {
       id: t.id,
       texto: t.texto,
       concluida: t.concluida === 1,
+      observacao: t.observacao ?? undefined,
     }))
 
     const materiais: Material[] = fase.materiais.map((m) => this.mapMaterialToDTO(m))

@@ -11,7 +11,7 @@ interface TrilhaProps {
   onToggleFase: (id: string) => void
   onToggleTarefa: (id: string, concluida: boolean) => void
   onToggleObs: (id: string) => void
-  onChangeObservacao: (id: string, valor: string) => void
+  onSaveObservacao: (id: string, valor: string) => void
   criarTarefa: (faseId: string, input: CriarTarefaInput, onSuccess: () => void) => Promise<void>
 }
 
@@ -24,7 +24,7 @@ export const Trilha = ({
   onToggleFase,
   onToggleTarefa,
   onToggleObs,
-  onChangeObservacao,
+  onSaveObservacao,
   criarTarefa,
 }: TrilhaProps) => {
   return (
@@ -45,7 +45,7 @@ export const Trilha = ({
             onToggleFase={onToggleFase}
             onToggleTarefa={onToggleTarefa}
             onToggleObs={onToggleObs}
-            onChangeObservacao={onChangeObservacao}
+            onSaveObservacao={onSaveObservacao}
             criarTarefa={criarTarefa}
           />
         )

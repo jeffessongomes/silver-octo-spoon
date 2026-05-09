@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { usePainelState } from './usePainelState'
 import { buildPainelStorageKey } from '../../../constants/storage-keys'
-import { TAREFAS_PRE_CONCLUIDAS, FASE_INICIAL_EXPANDIDA } from '../data'
+import { FASE_INICIAL_EXPANDIDA } from '../data'
 import type { EstadoPainel } from '../types'
 
 const CLIENTE = 'estefania'
@@ -16,24 +16,14 @@ describe('usePainelState', () => {
   })
 
   describe('hydration on first access', () => {
-    it('should mark pre-concluidas tasks as done when storage is empty', () => {
-      const { result } = renderHook(() => usePainelState(CLIENTE))
-
-      for (const id of TAREFAS_PRE_CONCLUIDAS) {
-        expect(result.current.estado.tarefas[id]).toBe(true)
-      }
-    })
-
     it('should expand fase-1 by default when storage is empty', () => {
       const { result } = renderHook(() => usePainelState(CLIENTE))
 
       expect(result.current.estado.expandidas).toContain(FASE_INICIAL_EXPANDIDA)
     })
 
-    it('should restore persisted state', () => {
+    it('should restore persisted expandidas from storage', () => {
       const persisted: EstadoPainel = {
-        tarefas: { 't2-1': true },
-        observacoes: { 't2-1': 'feito' },
         expandidas: ['fase-2'],
         obsAbertas: [],
       }
@@ -41,49 +31,41 @@ describe('usePainelState', () => {
 
       const { result } = renderHook(() => usePainelState(CLIENTE))
 
-      expect(result.current.estado.tarefas['t2-1']).toBe(true)
-      expect(result.current.estado.observacoes['t2-1']).toBe('feito')
       expect(result.current.estado.expandidas).toContain('fase-2')
     })
 
-    it('should not override pre-concluidas marked as false in storage', () => {
+    it('should restore persisted obsAbertas from storage', () => {
       const persisted: EstadoPainel = {
-        tarefas: { 't0-1': false },
-        observacoes: {},
         expandidas: ['fase-1'],
-        obsAbertas: [],
+        obsAbertas: ['t1-1', 't1-2'],
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
 
       const { result } = renderHook(() => usePainelState(CLIENTE))
 
-      expect(result.current.estado.tarefas['t0-1']).toBe(false)
+      expect(result.current.estado.obsAbertas).toEqual(['t1-1', 't1-2'])
     })
   })
 
   describe('persistence', () => {
-    it('should persist state on every action', () => {
+    it('should persist expandidas on TOGGLE_FASE', () => {
       const { result } = renderHook(() => usePainelState(CLIENTE))
 
       act(() => {
-        result.current.dispatch({ type: 'TOGGLE_TAREFA', tarefaId: 't1-4' })
+        result.current.dispatch({ type: 'TOGGLE_FASE', faseId: 'fase-3' })
       })
 
-      expect(readStorage().tarefas['t1-4']).toBe(true)
+      expect(readStorage().expandidas).toContain('fase-3')
     })
 
-    it('should persist observation text', () => {
+    it('should persist obsAbertas on TOGGLE_OBS', () => {
       const { result } = renderHook(() => usePainelState(CLIENTE))
 
       act(() => {
-        result.current.dispatch({
-          type: 'SET_OBSERVACAO',
-          tarefaId: 't1-4',
-          valor: 'Combinou com a Juliana',
-        })
+        result.current.dispatch({ type: 'TOGGLE_OBS', tarefaId: 't1-4' })
       })
 
-      expect(readStorage().observacoes['t1-4']).toBe('Combinou com a Juliana')
+      expect(readStorage().obsAbertas).toContain('t1-4')
     })
   })
 })

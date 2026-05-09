@@ -1,16 +1,19 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { FaseRepository } from '../../../src/repositories/FaseRepository'
 import { ClienteRepository } from '../../../src/repositories/ClienteRepository'
+import { ObservacaoRepository } from '../../../src/repositories/ObservacaoRepository'
 import { setupTestDatabase, teardownTestDatabase, clearAllTables } from '../../fixtures/testDatabase'
 
 describe('FaseRepository', () => {
   let faseRepo: FaseRepository
   let clienteRepo: ClienteRepository
+  let obsRepo: ObservacaoRepository
 
   beforeAll(async () => {
     await setupTestDatabase()
     faseRepo = new FaseRepository()
     clienteRepo = new ClienteRepository()
+    obsRepo = new ObservacaoRepository()
   })
 
   afterAll(async () => {
@@ -79,6 +82,55 @@ describe('FaseRepository', () => {
     expect(fase.titulo).toBe('Design')
     expect(fase.tarefas).toHaveLength(2)
     expect(fase.status).toBe('pending')
+  })
+
+  it('should create observacao for tarefa when observacao field is provided', async () => {
+    const fase = await faseRepo.createFaseWithTarefas('estefania', {
+      numero: '01',
+      titulo: 'Briefing',
+      resumo: '',
+      tarefas: [
+        { texto: 'Colher requisitos', observacao: 'Cliente prefere reuniao online' },
+        { texto: 'Enviar proposta' },
+      ],
+      materiais: [],
+    })
+
+    const tarefa1 = fase.tarefas[0]
+    const tarefa2 = fase.tarefas[1]
+
+    const obs1 = await obsRepo.getObservacao('estefania', tarefa1.id)
+    expect(obs1).not.toBeNull()
+    expect(obs1?.conteudo).toBe('Cliente prefere reuniao online')
+
+    const obs2 = await obsRepo.getObservacao('estefania', tarefa2.id)
+    expect(obs2).toBeNull()
+  })
+
+  it('should not create observacao for tarefa when observacao is empty string', async () => {
+    const fase = await faseRepo.createFaseWithTarefas('estefania', {
+      numero: '01',
+      titulo: 'Criacao',
+      resumo: '',
+      tarefas: [{ texto: 'Criar logo', observacao: '' }],
+      materiais: [],
+    })
+
+    const obs = await obsRepo.getObservacao('estefania', fase.tarefas[0].id)
+    expect(obs).toBeNull()
+  })
+
+  it('should not create observacao for tarefa when observacao is whitespace only', async () => {
+    const fase = await faseRepo.createFaseWithTarefas('estefania', {
+      numero: '01',
+      titulo: 'Entrega',
+      resumo: '',
+      tarefas: [{ texto: 'Enviar arquivos', observacao: '   ' }],
+      materiais: [],
+    })
+
+    const obs = await obsRepo.getObservacao('estefania', fase.tarefas[0].id)
+    expect(obs).toBeNull()
   })
 
   it('should recalculate fase status based on completed tarefas', async () => {

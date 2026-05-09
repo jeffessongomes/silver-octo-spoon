@@ -8,8 +8,10 @@ import { PainelHeader } from './components/PainelHeader'
 import { Sidebar } from './components/Sidebar'
 import { Trilha } from './components/Trilha'
 import { AdminModeProvider } from './context/AdminModeContext'
+import { ImportarPainelForm } from './components/ImportarPainelForm'
 import { useFasesAPI } from './hooks/useFasesAPI'
 import { useTarefasAPI } from './hooks/useTarefasAPI'
+import { useObservacaoAPI } from './hooks/useObservacaoAPI'
 import { usePainelState } from './hooks/usePainelState'
 import { usePainelStats } from './hooks/usePainelStats'
 import type { CriarFaseInput, FiltroTarefas } from './types'
@@ -25,6 +27,7 @@ export const Painel = ({ isAdmin }: PainelProps) => {
   const { fases, loading, error, fetchFases, criarFase, submitting: criarFaseSubmitting } =
     useFasesAPI(clientId)
   const { toggling, toggleConcluida, criarTarefa } = useTarefasAPI(clientId)
+  const { saveObservacao } = useObservacaoAPI(clientId)
   const stats = usePainelStats(fases)
   const [filtro, setFiltro] = useState<FiltroTarefas>('todas')
   const [novaFase, setNovaFase] = useState<CriarFaseInput>({ titulo: '', resumo: '' })
@@ -40,9 +43,9 @@ export const Painel = ({ isAdmin }: PainelProps) => {
     [dispatch],
   )
 
-  const handleChangeObservacao = useCallback(
-    (id: string, valor: string) => dispatch({ type: 'SET_OBSERVACAO', tarefaId: id, valor }),
-    [dispatch],
+  const handleSaveObservacao = useCallback(
+    (id: string, valor: string) => saveObservacao(id, valor),
+    [saveObservacao],
   )
 
   const handleToggleTarefa = useCallback(
@@ -152,42 +155,63 @@ export const Painel = ({ isAdmin }: PainelProps) => {
             onToggleFase={handleToggleFase}
             onToggleTarefa={handleToggleTarefa}
             onToggleObs={handleToggleObs}
-            onChangeObservacao={handleChangeObservacao}
+            onSaveObservacao={handleSaveObservacao}
             criarTarefa={handleCriarTarefa}
           />
           {isAdmin && (
-            <form
-              className="add-fase-form"
-              data-testid="form-add-fase"
-              onSubmit={(e) => { void handleAddFase(e) }}
-            >
-              <input
-                type="text"
-                className="add-fase-input"
-                data-testid="input-add-fase-titulo"
-                placeholder="Título da nova fase..."
-                value={novaFase.titulo}
-                onChange={(e) => setNovaFase((prev) => ({ ...prev, titulo: e.target.value }))}
-              />
-              <textarea
-                className="add-fase-resumo"
-                data-testid="input-add-fase-resumo"
-                placeholder="Resumo da nova fase..."
-                value={novaFase.resumo}
-                onChange={(e) => setNovaFase((prev) => ({ ...prev, resumo: e.target.value }))}
-              />
-              <button
-                type="submit"
-                data-testid="btn-add-fase"
-                disabled={
-                  novaFase.titulo.trim().length < 3 ||
-                  novaFase.resumo.trim().length < 3 ||
-                  criarFaseSubmitting
-                }
+            <>
+            <section className="admin-section" aria-label="Adicionar nova fase">
+              <h3 className="admin-section-title">Nova fase</h3>
+              <form
+                className="admin-form add-fase-form"
+                data-testid="form-add-fase"
+                onSubmit={(e) => { void handleAddFase(e) }}
               >
-                Adicionar fase
-              </button>
-            </form>
+                <div className="admin-form-field">
+                  <label htmlFor="input-add-fase-titulo" className="admin-label">
+                    Título da fase
+                  </label>
+                  <input
+                    id="input-add-fase-titulo"
+                    type="text"
+                    className="admin-input"
+                    data-testid="input-add-fase-titulo"
+                    placeholder="Ex: Identidade Visual"
+                    value={novaFase.titulo}
+                    onChange={(e) => setNovaFase((prev) => ({ ...prev, titulo: e.target.value }))}
+                  />
+                </div>
+                <div className="admin-form-field">
+                  <label htmlFor="input-add-fase-resumo" className="admin-label">
+                    Resumo
+                  </label>
+                  <textarea
+                    id="input-add-fase-resumo"
+                    className="admin-input admin-textarea"
+                    data-testid="input-add-fase-resumo"
+                    placeholder="Descreva brevemente o que será entregue nesta fase..."
+                    value={novaFase.resumo}
+                    onChange={(e) => setNovaFase((prev) => ({ ...prev, resumo: e.target.value }))}
+                  />
+                </div>
+                <div className="admin-form-actions">
+                  <button
+                    type="submit"
+                    className="admin-btn admin-btn--primary"
+                    data-testid="btn-add-fase"
+                    disabled={
+                      novaFase.titulo.trim().length < 3 ||
+                      novaFase.resumo.trim().length < 3 ||
+                      criarFaseSubmitting
+                    }
+                  >
+                    {criarFaseSubmitting ? 'Adicionando...' : '+ Adicionar fase'}
+                  </button>
+                </div>
+              </form>
+            </section>
+            <ImportarPainelForm clienteId={clientId} onSuccess={fetchFases} />
+            </>
           )}
         </main>
         <Sidebar agenda={AGENDA_SEMANA} />
