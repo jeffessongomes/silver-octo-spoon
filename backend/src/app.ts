@@ -3,13 +3,14 @@ import cors from 'cors'
 import { createRouter } from './routes'
 import { createDocsRouter, swaggerSpec } from './routes/docs'
 import { errorHandlerMiddleware } from './middleware/errorHandler'
+import { parseAllowedOrigins } from './shared/cors'
+
+export { parseAllowedOrigins } from './shared/cors'
 
 export function createApp(): express.Application {
   const app = express()
 
-  const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
-    .split(',')
-    .map((o) => o.trim())
+  const allowedOrigins = parseAllowedOrigins(process.env.CORS_ORIGIN)
 
   app.use(
     cors({
