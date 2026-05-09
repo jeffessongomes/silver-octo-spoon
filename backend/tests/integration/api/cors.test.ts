@@ -68,6 +68,40 @@ describe('CORS Middleware', () => {
   })
 })
 
+describe('CORS Middleware with empty CORS_ORIGIN', () => {
+  let app: Application
+
+  beforeAll(async () => {
+    process.env.CORS_ORIGIN = ''
+    app = await setupTestApp()
+  })
+
+  afterAll(async () => {
+    await teardownTestApp()
+    delete process.env.CORS_ORIGIN
+  })
+
+  it('should fall back to http://localhost:5173 when CORS_ORIGIN is empty', async () => {
+    const res = await request(app)
+      .get('/health')
+      .set('Origin', 'http://localhost:5173')
+
+    expect(res.status).toBe(200)
+    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:5173')
+  })
+
+  it('should respond to OPTIONS preflight with allowed origin when CORS_ORIGIN is empty', async () => {
+    const res = await request(app)
+      .options('/api/clientes/1/biblioteca')
+      .set('Origin', 'http://localhost:5173')
+      .set('Access-Control-Request-Method', 'GET')
+      .set('Access-Control-Request-Headers', 'Content-Type, X-Client-ID')
+
+    expect(res.status).toBe(200)
+    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:5173')
+  })
+})
+
 describe('CORS Middleware with multiple origins', () => {
   let app: Application
 
