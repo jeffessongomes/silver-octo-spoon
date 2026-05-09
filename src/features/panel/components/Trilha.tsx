@@ -1,16 +1,18 @@
-import type { EstadoPainel, Fase as FaseType, FiltroTarefas } from '../types'
+import type { EstadoPainel, FaseAPI, FiltroTarefas, CriarTarefaInput } from '../types'
 import type { PainelStats } from '../hooks/usePainelStats'
 import { Fase } from './Fase'
 
 interface TrilhaProps {
-  fases: FaseType[]
+  fases: FaseAPI[]
   estado: EstadoPainel
   stats: PainelStats
   filtro: FiltroTarefas
+  toggling: Set<string>
   onToggleFase: (id: string) => void
-  onToggleTarefa: (id: string) => void
+  onToggleTarefa: (id: string, concluida: boolean) => void
   onToggleObs: (id: string) => void
   onChangeObservacao: (id: string, valor: string) => void
+  criarTarefa: (faseId: string, input: CriarTarefaInput, onSuccess: () => void) => Promise<void>
 }
 
 export const Trilha = ({
@@ -18,10 +20,12 @@ export const Trilha = ({
   estado,
   stats,
   filtro,
+  toggling,
   onToggleFase,
   onToggleTarefa,
   onToggleObs,
   onChangeObservacao,
+  criarTarefa,
 }: TrilhaProps) => {
   return (
     <div className="trilha" data-testid="trilha">
@@ -37,10 +41,12 @@ export const Trilha = ({
             expandida={estado.expandidas.includes(fase.id)}
             estado={estado}
             filtro={filtro}
+            toggling={toggling}
             onToggleFase={onToggleFase}
             onToggleTarefa={onToggleTarefa}
             onToggleObs={onToggleObs}
             onChangeObservacao={onChangeObservacao}
+            criarTarefa={criarTarefa}
           />
         )
       })}

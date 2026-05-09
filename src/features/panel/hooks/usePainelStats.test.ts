@@ -1,19 +1,27 @@
 import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { calcularStatusVisual, usePainelStats } from './usePainelStats'
-import type { Fase } from '../types'
+import type { FaseAPI, TarefaAPI } from '../types'
 
-const createFase = (id: string, taskCount: number): Fase => ({
+const createTarefaAPI = (id: string, concluida = false): TarefaAPI => ({
+  id,
+  texto: `tarefa ${id}`,
+  fase_id: 'fase-1',
+  cliente_id: 'estefania',
+  concluida,
+  ordem: 0,
+})
+
+const createFaseAPI = (id: string, tarefas: TarefaAPI[]): FaseAPI => ({
   id,
   numero: `Fase ${id}`,
   titulo: `Fase ${id}`,
   resumo: '',
   status: 'pending',
-  tarefas: Array.from({ length: taskCount }, (_, i) => ({
-    id: `${id}-t${i + 1}`,
-    texto: `tarefa ${i + 1}`,
-  })),
+  tarefas,
   materiais: [],
+  cliente_id: 'estefania',
+  ordem: 0,
 })
 
 describe('calcularStatusVisual', () => {
@@ -36,10 +44,19 @@ describe('calcularStatusVisual', () => {
 
 describe('usePainelStats', () => {
   it('should compute totals across all fases', () => {
-    const fases = [createFase('fase-1', 3), createFase('fase-2', 2)]
-    const concluidas = { 'fase-1-t1': true, 'fase-1-t2': true, 'fase-2-t1': true }
+    const fases = [
+      createFaseAPI('fase-1', [
+        createTarefaAPI('fase-1-t1', true),
+        createTarefaAPI('fase-1-t2', true),
+        createTarefaAPI('fase-1-t3', false),
+      ]),
+      createFaseAPI('fase-2', [
+        createTarefaAPI('fase-2-t1', true),
+        createTarefaAPI('fase-2-t2', false),
+      ]),
+    ]
 
-    const { result } = renderHook(() => usePainelStats(fases, concluidas))
+    const { result } = renderHook(() => usePainelStats(fases))
 
     expect(result.current.totalConcluidas).toBe(3)
     expect(result.current.totalTarefas).toBe(5)
@@ -47,10 +64,15 @@ describe('usePainelStats', () => {
   })
 
   it('should compute per-fase stats', () => {
-    const fases = [createFase('fase-1', 3)]
-    const concluidas = { 'fase-1-t1': true, 'fase-1-t2': true, 'fase-1-t3': true }
+    const fases = [
+      createFaseAPI('fase-1', [
+        createTarefaAPI('t1', true),
+        createTarefaAPI('t2', true),
+        createTarefaAPI('t3', true),
+      ]),
+    ]
 
-    const { result } = renderHook(() => usePainelStats(fases, concluidas))
+    const { result } = renderHook(() => usePainelStats(fases))
 
     expect(result.current.porFase['fase-1']).toEqual({
       concluidas: 3,
@@ -59,9 +81,22 @@ describe('usePainelStats', () => {
     })
   })
 
-  it('should return zero percentual when there are no tasks', () => {
-    const { result } = renderHook(() => usePainelStats([], {}))
+  it('should return zero percentual when there are no fases', () => {
+    const { result } = renderHook(() => usePainelStats([]))
 
     expect(result.current.percentual).toBe(0)
+  })
+
+  it('should compute statusVisual as active when some tasks are done', () => {
+    const fases = [
+      createFaseAPI('fase-1', [
+        createTarefaAPI('t1', true),
+        createTarefaAPI('t2', false),
+      ]),
+    ]
+
+    const { result } = renderHook(() => usePainelStats(fases))
+
+    expect(result.current.porFase['fase-1'].statusVisual).toBe('active')
   })
 })

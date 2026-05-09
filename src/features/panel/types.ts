@@ -43,6 +43,43 @@ export interface CriarMaterialInput {
   url: string
 }
 
+export interface TarefaAPI {
+  id: string
+  texto: string
+  concluida: boolean
+  fase_id?: string
+  cliente_id?: string
+  ordem?: number
+}
+
+export interface FaseAPI {
+  id: string
+  numero: string
+  titulo: string
+  resumo: string
+  status: FaseStatus
+  tipo?: FaseTipo
+  tarefas: TarefaAPI[]
+  materiais: Material[]
+  cliente_id?: string
+  ordem?: number
+}
+
+export interface CriarTarefaInput {
+  texto: string
+}
+
+export interface CriarFaseInput {
+  titulo: string
+  resumo: string
+  numero?: string
+}
+
+export interface ToggleTarefaResponse {
+  tarefa: Pick<TarefaAPI, 'id' | 'concluida'>
+  fase_status: FaseStatus
+}
+
 export interface DadosPainel {
   cliente: string
   fases: Fase[]

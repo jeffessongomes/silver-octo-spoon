@@ -1,4 +1,6 @@
-import type { EstadoPainel, Fase as FaseType, FaseStatus, FiltroTarefas } from '../types'
+import { useState } from 'react'
+import type { EstadoPainel, FaseAPI, FaseStatus, FiltroTarefas, CriarTarefaInput } from '../types'
+import { useAdminMode } from '../context/AdminModeContext'
 import { MaterialCard } from './MaterialCard'
 import { TarefaItem } from './TarefaItem'
 
@@ -9,17 +11,19 @@ const STATUS_LABEL: Record<FaseStatus, string> = {
 }
 
 interface FaseProps {
-  fase: FaseType
+  fase: FaseAPI
   concluidas: number
   total: number
   statusVisual: FaseStatus
   expandida: boolean
   estado: EstadoPainel
   filtro: FiltroTarefas
+  toggling: Set<string>
   onToggleFase: (id: string) => void
-  onToggleTarefa: (id: string) => void
+  onToggleTarefa: (id: string, concluida: boolean) => void
   onToggleObs: (id: string) => void
   onChangeObservacao: (id: string, valor: string) => void
+  criarTarefa: (faseId: string, input: CriarTarefaInput, onSuccess: () => void) => Promise<void>
 }
 
 const isTarefaOculta = (concluida: boolean, filtro: FiltroTarefas): boolean => {
@@ -36,13 +40,20 @@ export const Fase = ({
   expandida,
   estado,
   filtro,
+  toggling,
   onToggleFase,
   onToggleTarefa,
   onToggleObs,
   onChangeObservacao,
+  criarTarefa,
 }: FaseProps) => {
+  const { isAdmin } = useAdminMode()
   const isExtra = fase.tipo === 'extra'
   const articleClassName = `fase ${expandida ? 'expanded' : ''}`
+
+  const [novaTarefaTexto, setNovaTarefaTexto] = useState('')
+  const [addingTarefa, setAddingTarefa] = useState(false)
+  const [addTarefaError, setAddTarefaError] = useState<string | null>(null)
 
   const handleHeaderClick = () => onToggleFase(fase.id)
   const handleHeaderKeyDown = (event: React.KeyboardEvent) => {
@@ -50,6 +61,16 @@ export const Fase = ({
       event.preventDefault()
       onToggleFase(fase.id)
     }
+  }
+
+  const handleAddTarefa = async () => {
+    if (novaTarefaTexto.trim().length < 3) return
+    setAddingTarefa(true)
+    setAddTarefaError(null)
+    await criarTarefa(fase.id, { texto: novaTarefaTexto.trim() }, () => {
+      setNovaTarefaTexto('')
+    })
+    setAddingTarefa(false)
   }
 
   return (
@@ -100,28 +121,52 @@ export const Fase = ({
         <div className="fase-body">
           <div className="secao-label">Tarefas</div>
           <ul className="tasks">
-            {fase.tarefas.map((tarefa) => {
-              const concluidaTarefa = Boolean(estado.tarefas[tarefa.id])
-              return (
-                <TarefaItem
-                  key={tarefa.id}
-                  tarefa={tarefa}
-                  concluida={concluidaTarefa}
-                  observacao={estado.observacoes[tarefa.id] ?? ''}
-                  obsAberta={estado.obsAbertas.includes(tarefa.id)}
-                  oculta={isTarefaOculta(concluidaTarefa, filtro)}
-                  onToggleConcluida={onToggleTarefa}
-                  onToggleObs={onToggleObs}
-                  onChangeObservacao={onChangeObservacao}
-                />
-              )
-            })}
+            {fase.tarefas.map((tarefa) => (
+              <TarefaItem
+                key={tarefa.id}
+                tarefa={tarefa}
+                concluida={tarefa.concluida}
+                isToggling={toggling.has(tarefa.id)}
+                observacao={estado.observacoes[tarefa.id] ?? ''}
+                obsAberta={estado.obsAbertas.includes(tarefa.id)}
+                oculta={isTarefaOculta(tarefa.concluida, filtro)}
+                onToggleConcluida={() => onToggleTarefa(tarefa.id, !tarefa.concluida)}
+                onToggleObs={onToggleObs}
+                onChangeObservacao={onChangeObservacao}
+              />
+            ))}
           </ul>
-          {fase.materiais.length > 0 ? (
+          {isAdmin && (
+            <form
+              className="add-tarefa-form"
+              data-testid={`form-add-tarefa-${fase.id}`}
+              onSubmit={(e) => { e.preventDefault(); void handleAddTarefa() }}
+            >
+              <input
+                type="text"
+                className="add-tarefa-input"
+                data-testid={`input-add-tarefa-${fase.id}`}
+                placeholder="Nova tarefa..."
+                value={novaTarefaTexto}
+                onChange={(e) => setNovaTarefaTexto(e.target.value)}
+              />
+              <button
+                type="submit"
+                data-testid={`btn-add-tarefa-${fase.id}`}
+                disabled={novaTarefaTexto.trim().length < 3 || addingTarefa}
+              >
+                Adicionar
+              </button>
+              {addTarefaError && (
+                <p data-testid={`error-add-tarefa-${fase.id}`}>{addTarefaError}</p>
+              )}
+            </form>
+          )}
+          {(fase.materiais ?? []).length > 0 ? (
             <>
               <div className="secao-label">Materiais desta fase</div>
               <div className="materiais-fase" data-testid={`materiais-fase-${fase.id}`}>
-                {fase.materiais.map((material) => (
+                {(fase.materiais ?? []).map((material) => (
                   <MaterialCard key={material.nome} material={material} />
                 ))}
               </div>

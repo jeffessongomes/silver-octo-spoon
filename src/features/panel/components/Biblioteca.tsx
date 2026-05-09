@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAdminMode } from '../context/AdminModeContext'
 import { useBiblioteca } from '../hooks/useBiblioteca'
 import type { MaterialTipo } from '../types'
 
@@ -24,6 +25,7 @@ const isValidUrl = (url: string): boolean => {
 }
 
 export const Biblioteca = () => {
+  const { isAdmin } = useAdminMode()
   const { materiais, loading, error, submitting, submitError, fetchBiblioteca, criarMaterial, deletarMaterial } =
     useBiblioteca()
 
@@ -47,46 +49,48 @@ export const Biblioteca = () => {
       <div className="sidebar-title">Biblioteca</div>
       <div className="sidebar-subtitle">Materiais de consulta</div>
 
-      <form className="biblioteca-form" onSubmit={(e) => { e.preventDefault(); void handleSubmit() }}>
-        <input
-          type="text"
-          placeholder="Nome do material"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          data-testid="input-nome-material"
-        />
-        <div className="biblioteca-form-row">
-          <select
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value as MaterialTipo | '')}
-            data-testid="sel-tipo-material"
-          >
-            <option value="">-- tipo --</option>
-            {TIPOS.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+      {isAdmin && (
+        <form className="biblioteca-form" onSubmit={(e) => { e.preventDefault(); void handleSubmit() }}>
           <input
-            type="url"
-            placeholder="https://..."
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            data-testid="input-url-material"
+            type="text"
+            placeholder="Nome do material"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            data-testid="input-nome-material"
           />
-        </div>
-        <button
-          type="submit"
-          disabled={!isFormValid || submitting}
-          data-testid="btn-submit-material"
-        >
-          {submitting ? 'Salvando...' : 'Adicionar'}
-        </button>
-        {submitError && (
-          <p className="biblioteca-form-error" role="alert" data-testid="error-form-biblioteca">
-            {submitError}
-          </p>
-        )}
-      </form>
+          <div className="biblioteca-form-row">
+            <select
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value as MaterialTipo | '')}
+              data-testid="sel-tipo-material"
+            >
+              <option value="">-- tipo --</option>
+              {TIPOS.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <input
+              type="url"
+              placeholder="https://..."
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              data-testid="input-url-material"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!isFormValid || submitting}
+            data-testid="btn-submit-material"
+          >
+            {submitting ? 'Salvando...' : 'Adicionar'}
+          </button>
+          {submitError && (
+            <p className="biblioteca-form-error" role="alert" data-testid="error-form-biblioteca">
+              {submitError}
+            </p>
+          )}
+        </form>
+      )}
 
       <hr className="biblioteca-divider" />
 
@@ -148,23 +152,25 @@ export const Biblioteca = () => {
                     <span className="biblioteca-nome">{item.nome}</span>
                   </a>
                 )}
-                <button
-                  onClick={() => { void deletarMaterial(item.id) }}
-                  title="Remover material"
-                  data-testid={`btn-delete-material-${item.id}`}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'var(--ink-mute)',
-                    fontSize: 14,
-                    padding: '0 4px',
-                    flexShrink: 0,
-                    lineHeight: 1,
-                  }}
-                >
-                  ×
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => { void deletarMaterial(item.id) }}
+                    title="Remover material"
+                    data-testid={`btn-delete-material-${item.id}`}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--ink-mute)',
+                      fontSize: 14,
+                      padding: '0 4px',
+                      flexShrink: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
               </li>
             )
           })}
