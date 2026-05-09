@@ -46,10 +46,10 @@ export interface CriarMaterialInput {
 export interface TarefaAPI {
   id: string
   texto: string
-  fase_id: string
-  cliente_id: string
   concluida: boolean
-  ordem: number
+  fase_id?: string
+  cliente_id?: string
+  ordem?: number
 }
 
 export interface FaseAPI {
@@ -61,8 +61,8 @@ export interface FaseAPI {
   tipo?: FaseTipo
   tarefas: TarefaAPI[]
   materiais: Material[]
-  cliente_id: string
-  ordem: number
+  cliente_id?: string
+  ordem?: number
 }
 
 export interface CriarTarefaInput {

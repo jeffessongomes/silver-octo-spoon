@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useToast } from '../../hooks/useToast'
 import { AGENDA_SEMANA, HEADER_INFO } from './data'
@@ -63,10 +63,12 @@ export const Painel = ({ isAdmin }: PainelProps) => {
     [criarTarefa, fetchFases],
   )
 
+  const expansaoInicialFeita = useRef(false)
+
   useEffect(() => {
-    if (fases.length === 0) return
-    const algumExpandido = fases.some((f) => estado.expandidas.includes(f.id))
-    if (!algumExpandido) {
+    if (fases.length === 0 || expansaoInicialFeita.current) return
+    expansaoInicialFeita.current = true
+    if (!fases.some((f) => estado.expandidas.includes(f.id))) {
       dispatch({ type: 'TOGGLE_FASE', faseId: fases[0].id })
     }
   }, [fases, estado.expandidas, dispatch])

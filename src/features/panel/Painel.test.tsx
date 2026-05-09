@@ -147,6 +147,29 @@ describe('Painel (integration)', () => {
 
       expect(screen.getByTestId('progress-stats')).toHaveTextContent('3/')
     })
+
+    it('should auto-expand first fase when stored expandidas do not match any API fase id', () => {
+      mockUseFasesAPI.mockReturnValue({
+        ...defaultFasesAPI(),
+        fases: [createFaseAPI({ id: 'uuid-api-real' })],
+      })
+
+      renderPainel()
+
+      expect(screen.getByTestId('fase-uuid-api-real')).toHaveClass('expanded')
+    })
+
+    it('should render tasks of expanded fase when API ids differ from stored expandidas', () => {
+      mockUseFasesAPI.mockReturnValue({
+        ...defaultFasesAPI(),
+        fases: [createFaseAPI({ id: 'uuid-api-real' })],
+      })
+
+      renderPainel()
+
+      expect(screen.getByTestId('task-t1-1')).toBeInTheDocument()
+      expect(screen.getByTestId('task-t1-4')).toBeInTheDocument()
+    })
   })
 
   describe('loading state', () => {

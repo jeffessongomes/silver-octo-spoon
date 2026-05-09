@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../../lib/api'
 import type { FaseAPI, CriarFaseInput } from '../types'
 
+interface PainelAPIResponse {
+  cliente: string
+  fases: FaseAPI[]
+  biblioteca: unknown[]
+}
+
 interface UseFasesAPIResult {
   fases: FaseAPI[]
   loading: boolean
@@ -11,6 +17,12 @@ interface UseFasesAPIResult {
   fetchFases: () => void
   criarFase: (input: CriarFaseInput) => Promise<void>
 }
+
+const normalizarFase = (f: FaseAPI): FaseAPI => ({
+  ...f,
+  tarefas: f.tarefas ?? [],
+  materiais: f.materiais ?? [],
+})
 
 export function useFasesAPI(clienteId: string): UseFasesAPIResult {
   const [fases, setFases] = useState<FaseAPI[]>([])
@@ -30,12 +42,12 @@ export function useFasesAPI(clienteId: string): UseFasesAPIResult {
     let cancelled = false
 
     api
-      .get<FaseAPI[]>(`/api/clientes/${clienteId}/fases`, {
+      .get<PainelAPIResponse>(`/api/clientes/${clienteId}/painel`, {
         headers: { 'X-Client-ID': clienteId },
       })
       .then(({ data }) => {
         if (!cancelled) {
-          setFases(data.map((f) => ({ ...f, tarefas: f.tarefas ?? [], materiais: f.materiais ?? [] })))
+          setFases(data.fases.map(normalizarFase))
           setError(null)
           setLastFetched(fetchTrigger)
         }
@@ -62,7 +74,7 @@ export function useFasesAPI(clienteId: string): UseFasesAPIResult {
           input,
           { headers: { 'X-Client-ID': clienteId } },
         )
-        setFases((prev) => [...prev, { ...data, tarefas: data.tarefas ?? [], materiais: data.materiais ?? [] }])
+        setFases((prev) => [...prev, normalizarFase(data)])
       } catch {
         setSubmitError('Erro ao adicionar fase')
       } finally {

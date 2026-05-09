@@ -17,10 +17,7 @@ vi.mock('../../../lib/api', () => ({
 const createTarefaAPI = (overrides?: Partial<TarefaAPI>): TarefaAPI => ({
   id: 'tarefa-001',
   texto: 'Combinar com a Juliana sobre o relatório',
-  fase_id: 'fase-1',
-  cliente_id: 'estefania',
   concluida: false,
-  ordem: 0,
   ...overrides,
 })
 
@@ -32,9 +29,13 @@ const createFaseAPI = (overrides?: Partial<FaseAPI>): FaseAPI => ({
   status: 'active',
   tarefas: [createTarefaAPI()],
   materiais: [],
-  cliente_id: 'estefania',
-  ordem: 0,
   ...overrides,
+})
+
+const createPainelResponse = (fases: FaseAPI[]) => ({
+  cliente: 'estefania',
+  fases,
+  biblioteca: [],
 })
 
 describe('useFasesAPI', () => {
@@ -47,9 +48,23 @@ describe('useFasesAPI', () => {
     return useFasesAPI
   }
 
-  describe('listagem (GET)', () => {
+  describe('listagem (GET /painel)', () => {
+    it('should call /painel endpoint, not /fases', async () => {
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([]) })
+      const useFasesAPI = await getHook()
+
+      renderHook(() => useFasesAPI('estefania'))
+
+      await waitFor(() =>
+        expect(mockApiGet).toHaveBeenCalledWith(
+          expect.stringContaining('/painel'),
+          expect.any(Object),
+        ),
+      )
+    })
+
     it('should start with loading true and empty fases list', async () => {
-      mockApiGet.mockResolvedValue({ data: [] })
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([]) })
       const useFasesAPI = await getHook()
 
       const { result } = renderHook(() => useFasesAPI('estefania'))
@@ -58,9 +73,9 @@ describe('useFasesAPI', () => {
       expect(result.current.fases).toEqual([])
     })
 
-    it('should populate fases after successful GET', async () => {
+    it('should populate fases from data.fases after successful GET', async () => {
       const fases = [createFaseAPI(), createFaseAPI({ id: 'fase-2', titulo: 'Ativar Indicação' })]
-      mockApiGet.mockResolvedValue({ data: fases })
+      mockApiGet.mockResolvedValue({ data: createPainelResponse(fases) })
       const useFasesAPI = await getHook()
 
       const { result } = renderHook(() => useFasesAPI('estefania'))
@@ -87,8 +102,8 @@ describe('useFasesAPI', () => {
       const primeiraLista = [createFaseAPI()]
       const segundaLista = [createFaseAPI(), createFaseAPI({ id: 'fase-2', titulo: 'Ativar Indicação' })]
       mockApiGet
-        .mockResolvedValueOnce({ data: primeiraLista })
-        .mockResolvedValueOnce({ data: segundaLista })
+        .mockResolvedValueOnce({ data: createPainelResponse(primeiraLista) })
+        .mockResolvedValueOnce({ data: createPainelResponse(segundaLista) })
       const useFasesAPI = await getHook()
 
       const { result } = renderHook(() => useFasesAPI('estefania'))
@@ -103,7 +118,7 @@ describe('useFasesAPI', () => {
     it('should clear error on successful retry', async () => {
       mockApiGet
         .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce({ data: [createFaseAPI()] })
+        .mockResolvedValueOnce({ data: createPainelResponse([createFaseAPI()]) })
       const useFasesAPI = await getHook()
 
       const { result } = renderHook(() => useFasesAPI('estefania'))
@@ -119,7 +134,7 @@ describe('useFasesAPI', () => {
     it('should add new fase to list after successful POST', async () => {
       const faseExistente = createFaseAPI()
       const faseNova = createFaseAPI({ id: 'fase-2', titulo: 'Ativar Indicação' })
-      mockApiGet.mockResolvedValue({ data: [faseExistente] })
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([faseExistente]) })
       mockApiPost.mockResolvedValue({ data: faseNova })
       const useFasesAPI = await getHook()
 
@@ -136,7 +151,7 @@ describe('useFasesAPI', () => {
     })
 
     it('should set submitting true during POST', async () => {
-      mockApiGet.mockResolvedValue({ data: [] })
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([]) })
       let resolvePost!: (value: unknown) => void
       mockApiPost.mockReturnValue(new Promise((r) => { resolvePost = r }))
       const useFasesAPI = await getHook()
@@ -158,7 +173,7 @@ describe('useFasesAPI', () => {
     })
 
     it('should set submitError when POST fails', async () => {
-      mockApiGet.mockResolvedValue({ data: [] })
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([]) })
       mockApiPost.mockRejectedValue(new Error('Server error'))
       const useFasesAPI = await getHook()
 
