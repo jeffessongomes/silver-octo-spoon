@@ -1,24 +1,17 @@
 import type { Request, Response, NextFunction } from 'express'
+import { UnauthorizedError, ForbiddenError } from '../shared/errors'
 
-export function authClienteMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function authClienteMiddleware(req: Request, _res: Response, next: NextFunction): void {
   const clienteId = req.headers['x-client-id'] as string | undefined
   const paramsClienteId = req.params.clienteId
 
   if (!clienteId) {
-    res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Header X-Client-ID é obrigatório',
-      statusCode: 401,
-    })
+    next(new UnauthorizedError('Header X-Client-ID é obrigatório'))
     return
   }
 
   if (paramsClienteId && clienteId !== paramsClienteId) {
-    res.status(403).json({
-      error: 'Forbidden',
-      message: 'X-Client-ID não tem permissão para acessar este cliente',
-      statusCode: 403,
-    })
+    next(new ForbiddenError('X-Client-ID não tem permissão para acessar este cliente'))
     return
   }
 

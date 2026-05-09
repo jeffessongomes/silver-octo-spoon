@@ -1,14 +1,13 @@
 import type { Request, Response, NextFunction } from 'express'
-import { MaterialRepository } from '../repositories/MaterialRepository'
-import { NotFoundError } from '../shared/errors'
+import { MaterialService } from '../services/MaterialService'
 import type { MaterialTipo } from '../shared/types'
 
 export class MaterialController {
-  constructor(private materialRepository: MaterialRepository) {}
+  constructor(private materialService: MaterialService) {}
 
   async getBiblioteca(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const biblioteca = await this.materialRepository.getMaterialsByCliente(req.params.clienteId)
+      const biblioteca = await this.materialService.getBiblioteca(req.params.clienteId)
       res.json(biblioteca)
     } catch (err) {
       next(err)
@@ -17,9 +16,7 @@ export class MaterialController {
 
   async createBibliotecaItem(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const material = await this.materialRepository.createMaterial({
-        clienteId: req.params.clienteId,
-        faseId: null,
+      const material = await this.materialService.createBibliotecaItem(req.params.clienteId, {
         nome: req.body.nome,
         tipo: req.body.tipo as MaterialTipo,
         url: req.body.url ?? '',
@@ -32,13 +29,15 @@ export class MaterialController {
 
   async createFaseMaterial(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const material = await this.materialRepository.createMaterial({
-        clienteId: req.params.clienteId,
-        faseId: req.params.faseId,
-        nome: req.body.nome,
-        tipo: req.body.tipo as MaterialTipo,
-        url: req.body.url ?? '',
-      })
+      const material = await this.materialService.createFaseMaterial(
+        req.params.clienteId,
+        req.params.faseId,
+        {
+          nome: req.body.nome,
+          tipo: req.body.tipo as MaterialTipo,
+          url: req.body.url ?? '',
+        }
+      )
       res.status(201).json(material)
     } catch (err) {
       next(err)
@@ -47,12 +46,11 @@ export class MaterialController {
 
   async updateMaterial(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const material = await this.materialRepository.updateMaterial(
+      const material = await this.materialService.updateMaterial(
         req.params.clienteId,
         req.params.materialId,
         req.body
       )
-      if (!material) throw new NotFoundError(`Material '${req.params.materialId}' não encontrado`)
       res.json(material)
     } catch (err) {
       next(err)
@@ -61,7 +59,7 @@ export class MaterialController {
 
   async deleteMaterial(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await this.materialRepository.deleteMaterial(req.params.clienteId, req.params.materialId)
+      await this.materialService.deleteMaterial(req.params.clienteId, req.params.materialId)
       res.status(204).send()
     } catch (err) {
       next(err)

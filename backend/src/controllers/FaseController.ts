@@ -1,16 +1,17 @@
 import type { Request, Response, NextFunction } from 'express'
 import { FaseService } from '../services/FaseService'
-import { FaseRepository } from '../repositories/FaseRepository'
+import { TarefaService } from '../services/TarefaService'
+import type { FiltroTarefas } from '../shared/types'
 
 export class FaseController {
   constructor(
     private faseService: FaseService,
-    private faseRepository: FaseRepository
+    private tarefaService: TarefaService
   ) {}
 
   async getFases(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const fases = await this.faseRepository.getFasesByCliente(req.params.clienteId)
+      const fases = await this.faseService.getFases(req.params.clienteId)
       res.json(fases)
     } catch (err) {
       next(err)
@@ -40,7 +41,7 @@ export class FaseController {
 
   async updateFase(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const fase = await this.faseRepository.updateFase(
+      const fase = await this.faseService.updateFase(
         req.params.clienteId,
         req.params.faseId,
         req.body
@@ -53,7 +54,7 @@ export class FaseController {
 
   async deleteFase(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await this.faseRepository.deleteFase(req.params.clienteId, req.params.faseId)
+      await this.faseService.deleteFase(req.params.clienteId, req.params.faseId)
       res.status(204).send()
     } catch (err) {
       next(err)
@@ -62,7 +63,7 @@ export class FaseController {
 
   async createTarefa(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await this.faseService.createTarefa(
+      const result = await this.tarefaService.createTarefa(
         req.params.clienteId,
         req.params.faseId,
         req.body
@@ -75,13 +76,11 @@ export class FaseController {
 
   async getTarefas(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { TarefaRepository } = await import('../repositories/TarefaRepository')
-      const tarefaRepo = new TarefaRepository()
-      const filtro = (req.query.filtro as string) || 'todas'
-      const tarefas = await tarefaRepo.getTarefasByFase(
+      const filtro = (req.query.filtro as FiltroTarefas) || 'todas'
+      const tarefas = await this.tarefaService.getTarefasByFase(
         req.params.clienteId,
         req.params.faseId,
-        filtro as 'todas' | 'pendentes' | 'concluidas'
+        filtro
       )
       res.json(tarefas)
     } catch (err) {

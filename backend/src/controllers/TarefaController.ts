@@ -1,17 +1,13 @@
 import type { Request, Response, NextFunction } from 'express'
-import { FaseService } from '../services/FaseService'
-import { TarefaRepository } from '../repositories/TarefaRepository'
+import { TarefaService } from '../services/TarefaService'
 import { NotFoundError } from '../shared/errors'
 
 export class TarefaController {
-  constructor(
-    private faseService: FaseService,
-    private tarefaRepository: TarefaRepository
-  ) {}
+  constructor(private tarefaService: TarefaService) {}
 
   async getTarefa(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const tarefa = await this.tarefaRepository.getTarefa(
+      const tarefa = await this.tarefaService.getTarefa(
         req.params.clienteId,
         req.params.tarefaId
       )
@@ -24,16 +20,9 @@ export class TarefaController {
 
   async updateTarefa(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const tarefa = await this.tarefaRepository.getTarefa(
-        req.params.clienteId,
-        req.params.tarefaId
-      )
-      if (!tarefa) throw new NotFoundError(`Tarefa '${req.params.tarefaId}' não encontrada`)
-
-      const result = await this.faseService.updateTarefa(
+      const result = await this.tarefaService.updateTarefa(
         req.params.clienteId,
         req.params.tarefaId,
-        tarefa.fase_id,
         req.body
       )
       res.json(result)
@@ -44,13 +33,7 @@ export class TarefaController {
 
   async deleteTarefa(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const tarefa = await this.tarefaRepository.getTarefa(
-        req.params.clienteId,
-        req.params.tarefaId
-      )
-      if (!tarefa) throw new NotFoundError(`Tarefa '${req.params.tarefaId}' não encontrada`)
-
-      await this.faseService.deleteTarefa(req.params.clienteId, req.params.tarefaId, tarefa.fase_id)
+      await this.tarefaService.deleteTarefa(req.params.clienteId, req.params.tarefaId)
       res.status(204).send()
     } catch (err) {
       next(err)
