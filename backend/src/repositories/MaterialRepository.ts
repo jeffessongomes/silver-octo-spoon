@@ -32,6 +32,13 @@ export class MaterialRepository extends BaseRepository {
     )
   }
 
+  async getAllMaterialsByCliente(clienteId: string): Promise<MaterialRow[]> {
+    return this.queryAll<MaterialRow>(
+      'SELECT * FROM materiais WHERE cliente_id = ? ORDER BY fase_id NULLS LAST, ordem ASC',
+      [clienteId]
+    )
+  }
+
   async getMaterial(clienteId: string, materialId: string): Promise<MaterialRow | null> {
     return this.queryOne<MaterialRow>(
       'SELECT * FROM materiais WHERE id = ? AND cliente_id = ?',
@@ -40,7 +47,7 @@ export class MaterialRepository extends BaseRepository {
   }
 
   async createMaterial(data: CreateMaterialDTO): Promise<MaterialRow> {
-    const matId = `mat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const matId = crypto.randomUUID()
     const maxOrdem = await this.queryOne<{ max_ordem: number | null }>(
       'SELECT MAX(ordem) as max_ordem FROM materiais WHERE cliente_id = ? AND (fase_id = ? OR (fase_id IS NULL AND ? IS NULL))',
       [data.clienteId, data.faseId, data.faseId]

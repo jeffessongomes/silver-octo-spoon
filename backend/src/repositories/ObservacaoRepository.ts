@@ -31,7 +31,7 @@ export class ObservacaoRepository extends BaseRepository {
         [conteudo, tarefaId, clienteId]
       )
     } else {
-      const obsId = `obs-${tarefaId}-${Date.now()}`
+      const obsId = crypto.randomUUID()
       await this.execute(
         `INSERT INTO observacoes (id, tarefa_id, cliente_id, conteudo) VALUES (?, ?, ?, ?)`,
         [obsId, tarefaId, clienteId, conteudo]

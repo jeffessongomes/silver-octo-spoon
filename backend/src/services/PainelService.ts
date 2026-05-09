@@ -15,22 +15,24 @@ export class PainelService {
     const cliente = await this.clienteRepository.getCliente(clienteId)
     if (!cliente) throw new NotFoundError(`Cliente '${clienteId}' não encontrado`)
 
-    const fasesRows = await this.faseRepository.getFasesByCliente(clienteId)
+    const fases = await this.faseRepository.getFasesWithAllTarefas(clienteId)
+    const allMateriais = await this.materialRepository.getAllMaterialsByCliente(clienteId)
 
-    const fases: Fase[] = await Promise.all(
-      fasesRows.map(async (faseRow) => {
-        const faseComTarefas = await this.faseRepository.getFaseWithTarefas(clienteId, faseRow.id)
-        return this.mapFaseToDTO(faseComTarefas!)
-      })
-    )
+    const fasesMap = new Map(fases.map((f) => [f.id, f]))
+    const biblioteca: MaterialRow[] = []
 
-    const bibliotecaRows = await this.materialRepository.getMaterialsByCliente(clienteId)
-    const biblioteca = bibliotecaRows.map((m) => this.mapMaterialToDTO(m))
+    for (const mat of allMateriais) {
+      if (mat.fase_id === null) {
+        biblioteca.push(mat)
+      } else {
+        fasesMap.get(mat.fase_id)?.materiais.push(mat)
+      }
+    }
 
     return {
       cliente: clienteId,
-      fases,
-      biblioteca,
+      fases: fases.map((f) => this.mapFaseToDTO(f)),
+      biblioteca: biblioteca.map((m) => this.mapMaterialToDTO(m)),
     }
   }
 

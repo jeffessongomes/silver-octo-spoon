@@ -133,7 +133,7 @@ describe('FaseRepository', () => {
     expect(obs).toBeNull()
   })
 
-  it('should recalculate fase status based on completed tarefas', async () => {
+  it('should compute status done when all tarefas are completed', async () => {
     const fase = await faseRepo.createFaseWithTarefas('estefania', {
       numero: 'Fase 03',
       titulo: 'Desenvolvimento',
@@ -146,13 +146,64 @@ describe('FaseRepository', () => {
     })
 
     const db = (faseRepo as unknown as { db: import('sqlite').Database }).db
-    await db.run(
-      'UPDATE tarefas SET concluida = 1 WHERE fase_id = ?',
-      [fase.id]
-    )
-    await faseRepo.recalculateFaseStatus('estefania', fase.id)
+    await db.run('UPDATE tarefas SET concluida = 1 WHERE fase_id = ?', [fase.id])
 
     const atualizada = await faseRepo.getFaseWithTarefas('estefania', fase.id)
     expect(atualizada?.status).toBe('done')
+  })
+
+  it('should compute status active when some tarefas are completed', async () => {
+    const fase = await faseRepo.createFaseWithTarefas('estefania', {
+      numero: 'Fase 04',
+      titulo: 'Criacao',
+      resumo: '',
+      tarefas: [{ texto: 'Task A' }, { texto: 'Task B' }],
+      materiais: [],
+    })
+
+    const db = (faseRepo as unknown as { db: import('sqlite').Database }).db
+    await db.run(
+      'UPDATE tarefas SET concluida = 1 WHERE fase_id = ? AND texto = ?',
+      [fase.id, 'Task A']
+    )
+
+    const atualizada = await faseRepo.getFaseWithTarefas('estefania', fase.id)
+    expect(atualizada?.status).toBe('active')
+  })
+
+  it('should compute status pending when no tarefas exist', async () => {
+    const fase = await faseRepo.createFaseWithTarefas('estefania', {
+      numero: 'Fase 05',
+      titulo: 'Vazia',
+      resumo: '',
+      tarefas: [],
+      materiais: [],
+    })
+
+    const atualizada = await faseRepo.getFaseWithTarefas('estefania', fase.id)
+    expect(atualizada?.status).toBe('pending')
+  })
+
+  it('should return all fases with tarefas via getFasesWithAllTarefas', async () => {
+    await faseRepo.createFaseWithTarefas('estefania', {
+      numero: 'Fase 01',
+      titulo: 'Discovery',
+      resumo: '',
+      tarefas: [{ texto: 'Tarefa A' }, { texto: 'Tarefa B' }],
+      materiais: [],
+    })
+    await faseRepo.createFaseWithTarefas('estefania', {
+      numero: 'Fase 02',
+      titulo: 'Design',
+      resumo: '',
+      tarefas: [],
+      materiais: [],
+    })
+
+    const fases = await faseRepo.getFasesWithAllTarefas('estefania')
+    expect(fases).toHaveLength(2)
+    const discovery = fases.find((f) => f.titulo === 'Discovery')
+    expect(discovery?.tarefas).toHaveLength(2)
+    expect(discovery?.status).toBe('pending')
   })
 })

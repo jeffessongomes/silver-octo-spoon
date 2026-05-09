@@ -2,6 +2,7 @@ import path from 'path'
 import fs from 'fs'
 import sqlite3 from 'sqlite3'
 import { open, Database } from 'sqlite'
+import { runMigrations } from './migrationRunner'
 
 let db: Database | null = null
 
@@ -19,10 +20,7 @@ export async function initializeDatabase(dbPath: string = './data/painel.db'): P
   })
 
   await db.run('PRAGMA foreign_keys = ON')
-
-  const schemaPath = path.join(__dirname, 'schema.sql')
-  const schema = fs.readFileSync(schemaPath, 'utf-8')
-  await db.exec(schema)
+  await runMigrations(db)
 }
 
 export function getDatabase(): Database {

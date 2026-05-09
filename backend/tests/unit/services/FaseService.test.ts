@@ -51,8 +51,8 @@ describe('FaseService', () => {
     faseRepo = {
       getFaseWithTarefas: vi.fn(),
       createFaseWithTarefas: vi.fn(),
-      recalculateFaseStatus: vi.fn(),
       getFasesByCliente: vi.fn(),
+      getFasesWithAllTarefas: vi.fn(),
       updateFase: vi.fn(),
       deleteFase: vi.fn(),
     } as unknown as FaseRepository
@@ -79,6 +79,7 @@ describe('FaseService', () => {
   describe('when getFaseComTarefas is called', () => {
     it('should return fase with calculated status', async () => {
       const faseMock = createFaseMock({
+        status: 'active',
         tarefas: [
           { id: 't1', fase_id: 'fase-1', cliente_id: 'estefania', texto: 'T1', concluida: 1, ordem: 0 },
           { id: 't2', fase_id: 'fase-1', cliente_id: 'estefania', texto: 'T2', concluida: 0, ordem: 1 },
@@ -106,15 +107,12 @@ describe('FaseService', () => {
       })
 
       vi.mocked(tarefaRepo.updateTarefa).mockResolvedValue(tarefaMock)
-      vi.mocked(faseRepo.recalculateFaseStatus).mockResolvedValue(undefined)
       vi.mocked(faseRepo.getFaseWithTarefas).mockResolvedValue(faseMock)
-      vi.mocked(tarefaRepo.getTarefa).mockResolvedValue(tarefaMock)
 
       const result = await service.toggleTarefaEAtualizarFase('estefania', 't1', 'fase-1', true)
 
       expect(result.tarefa.concluida).toBe(1)
       expect(result.fase.status).toBe('done')
-      expect(faseRepo.recalculateFaseStatus).toHaveBeenCalledWith('estefania', 'fase-1')
     })
   })
 
