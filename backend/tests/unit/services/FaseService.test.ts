@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FaseService } from '../../../src/services/FaseService'
 import { NotFoundError } from '../../../src/shared/errors'
 import type { FaseRepository, FaseComTarefas, CreateFaseDTO } from '../../../src/repositories/FaseRepository'
-import type { TarefaRepository } from '../../../src/repositories/TarefaRepository'
 import type { ClienteRepository, ClienteRow } from '../../../src/repositories/ClienteRepository'
 
 const createFaseMock = (overrides?: Partial<FaseComTarefas>): FaseComTarefas => ({
@@ -44,7 +43,6 @@ const createFaseDTO = (overrides?: Partial<CreateFaseDTO>): CreateFaseDTO => ({
 describe('FaseService', () => {
   let service: FaseService
   let faseRepo: FaseRepository
-  let tarefaRepo: TarefaRepository
   let clienteRepo: ClienteRepository
 
   beforeEach(() => {
@@ -57,14 +55,6 @@ describe('FaseService', () => {
       deleteFase: vi.fn(),
     } as unknown as FaseRepository
 
-    tarefaRepo = {
-      getTarefa: vi.fn(),
-      updateTarefa: vi.fn(),
-      createTarefa: vi.fn(),
-      getTarefasByFase: vi.fn(),
-      deleteTarefa: vi.fn(),
-    } as unknown as TarefaRepository
-
     clienteRepo = {
       getCliente: vi.fn(),
       createCliente: vi.fn(),
@@ -73,7 +63,19 @@ describe('FaseService', () => {
       deleteCliente: vi.fn(),
     } as unknown as ClienteRepository
 
-    service = new FaseService(faseRepo, tarefaRepo, clienteRepo)
+    service = new FaseService(faseRepo, clienteRepo)
+  })
+
+  describe('when getFases is called', () => {
+    it('should delegate to faseRepository', async () => {
+      const fases = [createFaseMock()]
+      vi.mocked(faseRepo.getFasesByCliente).mockResolvedValue(fases)
+
+      const result = await service.getFases('estefania')
+
+      expect(faseRepo.getFasesByCliente).toHaveBeenCalledWith('estefania')
+      expect(result).toEqual(fases)
+    })
   })
 
   describe('when getFaseComTarefas is called', () => {
@@ -97,27 +99,6 @@ describe('FaseService', () => {
     })
   })
 
-  describe('when toggleTarefaEAtualizarFase is called', () => {
-    it('should return updated tarefa and fase with recalculated status', async () => {
-      const tarefaMock = { id: 't1', fase_id: 'fase-1', cliente_id: 'estefania', texto: 'T1', concluida: 1, ordem: 0 }
-      const faseMock = createFaseMock({
-        status: 'done',
-        tarefas: [tarefaMock],
-      })
-
-      vi.mocked(tarefaRepo.updateTarefa).mockResolvedValue(tarefaMock)
-      vi.mocked(faseRepo.recalculateFaseStatus).mockResolvedValue(undefined)
-      vi.mocked(faseRepo.getFaseWithTarefas).mockResolvedValue(faseMock)
-      vi.mocked(tarefaRepo.getTarefa).mockResolvedValue(tarefaMock)
-
-      const result = await service.toggleTarefaEAtualizarFase('estefania', 't1', 'fase-1', true)
-
-      expect(result.tarefa.concluida).toBe(1)
-      expect(result.fase.status).toBe('done')
-      expect(faseRepo.recalculateFaseStatus).toHaveBeenCalledWith('estefania', 'fase-1')
-    })
-  })
-
   describe('when createFase is called', () => {
     it('should throw NotFoundError when cliente does not exist', async () => {
       vi.mocked(clienteRepo.getCliente).mockResolvedValue(null)
@@ -136,6 +117,28 @@ describe('FaseService', () => {
       expect(clienteRepo.getCliente).toHaveBeenCalledWith('estefania')
       expect(faseRepo.createFaseWithTarefas).toHaveBeenCalledWith('estefania', createFaseDTO())
       expect(result.id).toBe('fase-1')
+    })
+  })
+
+  describe('when updateFase is called', () => {
+    it('should delegate to faseRepository', async () => {
+      const faseMock = createFaseMock({ titulo: 'Novo Titulo' })
+      vi.mocked(faseRepo.updateFase).mockResolvedValue(faseMock)
+
+      const result = await service.updateFase('estefania', 'fase-1', { titulo: 'Novo Titulo' })
+
+      expect(faseRepo.updateFase).toHaveBeenCalledWith('estefania', 'fase-1', { titulo: 'Novo Titulo' })
+      expect(result?.titulo).toBe('Novo Titulo')
+    })
+  })
+
+  describe('when deleteFase is called', () => {
+    it('should delegate to faseRepository', async () => {
+      vi.mocked(faseRepo.deleteFase).mockResolvedValue(undefined)
+
+      await service.deleteFase('estefania', 'fase-1')
+
+      expect(faseRepo.deleteFase).toHaveBeenCalledWith('estefania', 'fase-1')
     })
   })
 })

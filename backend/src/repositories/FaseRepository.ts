@@ -1,5 +1,6 @@
 import { BaseRepository } from './BaseRepository'
 import type { FaseStatus, FaseTipo, MaterialTipo } from '../shared/types'
+import { calculateFaseStatus } from '../shared/utils'
 
 export interface TarefaRow {
   id: string
@@ -139,13 +140,7 @@ export class FaseRepository extends BaseRepository {
 
     const total = counts?.total ?? 0
     const concluidas = counts?.concluidas ?? 0
-
-    let status: FaseStatus = 'pending'
-    if (total > 0 && concluidas === total) {
-      status = 'done'
-    } else if (concluidas > 0) {
-      status = 'active'
-    }
+    const status = calculateFaseStatus(total, concluidas)
 
     await this.execute(
       `UPDATE fases SET status = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id = ? AND cliente_id = ?`,

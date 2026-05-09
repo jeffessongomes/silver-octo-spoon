@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import { createContainer } from './container'
 import { createRouter } from './routes'
 import { createDocsRouter, swaggerSpec } from './routes/docs'
 import { errorHandlerMiddleware } from './middleware/errorHandler'
@@ -28,7 +29,8 @@ export function createApp(): express.Application {
     res.json({ status: 'ok' })
   })
 
-  app.use('/api', createRouter())
+  const container = createContainer()
+  app.use('/api', createRouter(container))
 
   if (process.env.SWAGGER_ENABLED !== 'false') {
     app.get('/api-docs.json', (_req, res) => res.json(swaggerSpec))
