@@ -45,7 +45,7 @@ export class TarefaRepository extends BaseRepository {
       [data.faseId, data.clienteId]
     )
     const ordem = (maxOrdem?.max_ordem ?? -1) + 1
-    const tarefaId = `t-${data.faseId}-${Date.now()}`
+    const tarefaId = crypto.randomUUID()
 
     await this.execute(
       `INSERT INTO tarefas (id, fase_id, cliente_id, texto, ordem) VALUES (?, ?, ?, ?, ?)`,
