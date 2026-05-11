@@ -1,5 +1,7 @@
+import { useState, useRef } from 'react'
 import { useDebouncedSave } from '../../../hooks/useDebouncedSave'
-import type { TarefaAPI } from '../types'
+import { useAdminMode } from '../context/AdminModeContext'
+import type { TarefaAPI, EditarTarefaInput } from '../types'
 
 interface TarefaItemProps {
   tarefa: TarefaAPI
@@ -9,7 +11,14 @@ interface TarefaItemProps {
   onToggleConcluida: (id: string) => void
   onToggleObs: (id: string) => void
   onSaveObservacao: (id: string, valor: string) => void
+  onEdit?: (id: string, input: EditarTarefaInput) => void
+  onDelete?: (id: string) => void
 }
+
+type EditSaveStatus = 'idle' | 'saving' | 'saved'
+
+const EDIT_DEBOUNCE_MS = 600
+const SAVED_HIDE_MS = 2000
 
 const ObsIcon = () => (
   <svg
@@ -38,11 +47,85 @@ export const TarefaItem = ({
   onToggleConcluida,
   onToggleObs,
   onSaveObservacao,
+  onEdit,
+  onDelete,
 }: TarefaItemProps) => {
+  const { isAdmin } = useAdminMode()
+
+  const [isEditingTexto, setIsEditingTexto] = useState(false)
+  const [editTextoValue, setEditTextoValue] = useState(tarefa.texto)
+  const [editSaveStatus, setEditSaveStatus] = useState<EditSaveStatus>('idle')
+  const editDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const [confirmandoDelete, setConfirmandoDelete] = useState(false)
+
   const temObs = (tarefa.observacao ?? '').trim().length > 0
   const { status, schedule } = useDebouncedSave<string>((valor) =>
     onSaveObservacao(tarefa.id, valor),
   )
+
+  const isTextoValido = (t: string) =>
+    t.trim().length >= 3 && t.trim() !== tarefa.texto
+
+  const clearEditTimers = () => {
+    if (editDebounceRef.current) clearTimeout(editDebounceRef.current)
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+  }
+
+  const commitSave = (texto: string) => {
+    clearEditTimers()
+    setEditSaveStatus('saving')
+    onEdit?.(tarefa.id, { texto: texto.trim() })
+    setEditSaveStatus('saved')
+    savedTimerRef.current = setTimeout(() => setEditSaveStatus('idle'), SAVED_HIDE_MS)
+  }
+
+  const handleTextoClick = () => {
+    if (!isAdmin || !onEdit) return
+    setEditTextoValue(tarefa.texto)
+    setEditSaveStatus('idle')
+    setIsEditingTexto(true)
+  }
+
+  const handleTextoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setEditTextoValue(val)
+
+    clearEditTimers()
+
+    if (!isTextoValido(val)) {
+      setEditSaveStatus('idle')
+      return
+    }
+
+    setEditSaveStatus('saving')
+    editDebounceRef.current = setTimeout(() => {
+      commitSave(val)
+    }, EDIT_DEBOUNCE_MS)
+  }
+
+  const handleTextoBlur = () => {
+    if (isTextoValido(editTextoValue)) {
+      commitSave(editTextoValue)
+    } else {
+      clearEditTimers()
+      setEditSaveStatus('idle')
+    }
+    setIsEditingTexto(false)
+  }
+
+  const handleTextoKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      clearEditTimers()
+      setEditTextoValue(tarefa.texto)
+      setEditSaveStatus('idle')
+      setIsEditingTexto(false)
+    }
+    if (e.key === 'Enter') {
+      e.currentTarget.blur()
+    }
+  }
 
   const handleCheckboxClick = (event: React.MouseEvent) => {
     event.stopPropagation()
@@ -55,6 +138,19 @@ export const TarefaItem = ({
       event.stopPropagation()
       onToggleConcluida(tarefa.id)
     }
+  }
+
+  const handleDeleteClick = () => {
+    setConfirmandoDelete(true)
+  }
+
+  const handleConfirmarDelete = () => {
+    onDelete?.(tarefa.id)
+    setConfirmandoDelete(false)
+  }
+
+  const handleCancelarDelete = () => {
+    setConfirmandoDelete(false)
   }
 
   const liClassName = [
@@ -83,7 +179,78 @@ export const TarefaItem = ({
           onKeyDown={!isToggling ? handleCheckboxKeyDown : undefined}
         />
         <div className="task-content">
-          <div className="task-text">{tarefa.texto}</div>
+          {isEditingTexto ? (
+            <div className="task-edit-row">
+              <input
+                type="text"
+                className="admin-input task-text-input"
+                data-testid={`input-edit-tarefa-${tarefa.id}`}
+                value={editTextoValue}
+                onChange={handleTextoChange}
+                onBlur={handleTextoBlur}
+                onKeyDown={handleTextoKeyDown}
+                autoFocus
+              />
+              {editSaveStatus !== 'idle' && (
+                <span
+                  className={`task-edit-status task-edit-status--${editSaveStatus}`}
+                  data-testid={`status-edit-tarefa-${tarefa.id}`}
+                >
+                  {editSaveStatus === 'saving' ? 'Salvando...' : 'Salvo'}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div
+              className={`task-text ${isAdmin && onEdit ? 'task-text--editable' : ''}`}
+              data-testid={`task-text-${tarefa.id}`}
+              onClick={handleTextoClick}
+              role={isAdmin && onEdit ? 'button' : undefined}
+              tabIndex={isAdmin && onEdit ? 0 : undefined}
+              onKeyDown={isAdmin && onEdit ? (e) => { if (e.key === 'Enter' || e.key === ' ') handleTextoClick() } : undefined}
+            >
+              {tarefa.texto}
+            </div>
+          )}
+          {isAdmin && !isEditingTexto && (
+            <div className="task-admin-actions">
+              {onDelete && !confirmandoDelete && (
+                <button
+                  type="button"
+                  className="admin-action-btn admin-action-btn--danger"
+                  data-testid={`btn-delete-tarefa-${tarefa.id}`}
+                  onClick={handleDeleteClick}
+                >
+                  Excluir
+                </button>
+              )}
+              {confirmandoDelete && (
+                <div
+                  role="dialog"
+                  className="task-confirm-delete"
+                  data-testid={`dialog-confirm-delete-tarefa-${tarefa.id}`}
+                >
+                  <span className="task-confirm-delete-label">Excluir esta tarefa?</span>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--danger"
+                    data-testid={`btn-confirm-delete-tarefa-${tarefa.id}`}
+                    onClick={handleConfirmarDelete}
+                  >
+                    Sim, excluir
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--ghost"
+                    data-testid={`btn-cancel-delete-tarefa-${tarefa.id}`}
+                    onClick={handleCancelarDelete}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <button
             type="button"
             className={`task-obs-toggle ${temObs ? 'has-content' : ''}`}

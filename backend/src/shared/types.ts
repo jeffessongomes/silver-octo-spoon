@@ -13,6 +13,7 @@ export interface Tarefa {
 }
 
 export interface Material {
+  id?: string
   nome: string
   tipo: MaterialTipo
   url: string

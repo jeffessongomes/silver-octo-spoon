@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useToast } from '../../hooks/useToast'
+import { api } from '../../lib/api'
 import { AGENDA_SEMANA, HEADER_INFO } from './data'
 import { Filters } from './components/Filters'
 import { Hero } from './components/Hero'
@@ -14,7 +15,7 @@ import { useTarefasAPI } from './hooks/useTarefasAPI'
 import { useObservacaoAPI } from './hooks/useObservacaoAPI'
 import { usePainelState } from './hooks/usePainelState'
 import { usePainelStats } from './hooks/usePainelStats'
-import type { CriarFaseInput, FiltroTarefas } from './types'
+import type { CriarFaseInput, EditarFaseInput, EditarTarefaInput, FiltroTarefas, TarefaAPI } from './types'
 import './Painel.css'
 
 interface PainelProps {
@@ -24,11 +25,11 @@ interface PainelProps {
 export const Painel = ({ isAdmin }: PainelProps) => {
   const { clientId = '' } = useParams<{ clientId: string }>()
   const { estado, dispatch } = usePainelState(clientId)
-  const { fases, loading, error, fetchFases, criarFase, submitting: criarFaseSubmitting } =
+  const { fases: fasesLocal, setFases: setFasesLocal, loading, error, fetchFases, criarFase, submitting: criarFaseSubmitting, deletarFase, editarFase } =
     useFasesAPI(clientId)
-  const { toggling, toggleConcluida, criarTarefa } = useTarefasAPI(clientId)
+  const { toggling, toggleConcluida, criarTarefa, deletarTarefa, editarTarefa } = useTarefasAPI(clientId)
   const { saveObservacao } = useObservacaoAPI(clientId)
-  const stats = usePainelStats(fases)
+  const stats = usePainelStats(fasesLocal)
   const [filtro, setFiltro] = useState<FiltroTarefas>('todas')
   const [novaFase, setNovaFase] = useState<CriarFaseInput>({ titulo: '', resumo: '' })
   const { showToast } = useToast()
@@ -66,24 +67,86 @@ export const Painel = ({ isAdmin }: PainelProps) => {
     [criarTarefa, fetchFases],
   )
 
+  const handleDeletarTarefa = useCallback(
+    (tarefaId: string) => {
+      setFasesLocal((prev) =>
+        prev.map((f) => ({ ...f, tarefas: f.tarefas.filter((t) => t.id !== tarefaId) })),
+      )
+      void deletarTarefa(
+        tarefaId,
+        () => {},
+        () => {
+          fetchFases()
+          showToast('Erro ao excluir tarefa')
+        },
+      )
+    },
+    [deletarTarefa, fetchFases, showToast, setFasesLocal],
+  )
+
+  const handleEditarTarefa = useCallback(
+    (tarefaId: string, input: EditarTarefaInput) => {
+      void editarTarefa(tarefaId, input, (updatedTarefa: TarefaAPI) => {
+        setFasesLocal((prev) =>
+          prev.map((f) => ({
+            ...f,
+            tarefas: f.tarefas.map((t) => (t.id === tarefaId ? { ...t, ...updatedTarefa } : t)),
+          })),
+        )
+      })
+    },
+    [editarTarefa, setFasesLocal],
+  )
+
+  const handleDeletarFase = useCallback(
+    (faseId: string) => {
+      void deletarFase(faseId, () => { fetchFases() })
+    },
+    [deletarFase, fetchFases],
+  )
+
+  const handleEditarFase = useCallback(
+    (faseId: string, input: EditarFaseInput) => {
+      void editarFase(faseId, input, () => { fetchFases() })
+    },
+    [editarFase, fetchFases],
+  )
+
+  const handleDeletarMaterial = useCallback(
+    async (materialId: string) => {
+      setFasesLocal((prev) =>
+        prev.map((f) => ({ ...f, materiais: f.materiais.filter((m) => m.id !== materialId) })),
+      )
+      try {
+        await api.delete(`/api/clientes/${clientId}/materiais/${materialId}`, {
+          headers: { 'X-Client-ID': clientId },
+        })
+      } catch {
+        fetchFases()
+        showToast('Erro ao excluir material')
+      }
+    },
+    [clientId, fetchFases, showToast, setFasesLocal],
+  )
+
   const expansaoInicialFeita = useRef(false)
 
   useEffect(() => {
-    if (fases.length === 0 || expansaoInicialFeita.current) return
+    if (fasesLocal.length === 0 || expansaoInicialFeita.current) return
     expansaoInicialFeita.current = true
-    if (!fases.some((f) => estado.expandidas.includes(f.id))) {
-      dispatch({ type: 'TOGGLE_FASE', faseId: fases[0].id })
+    if (!fasesLocal.some((f) => estado.expandidas.includes(f.id))) {
+      dispatch({ type: 'TOGGLE_FASE', faseId: fasesLocal[0].id })
     }
-  }, [fases, estado.expandidas, dispatch])
+  }, [fasesLocal, estado.expandidas, dispatch])
 
   const handleAddFase = async (e: { preventDefault(): void }) => {
     e.preventDefault()
     if (novaFase.titulo.trim().length < 3 || novaFase.resumo.trim().length < 3) return
-    await criarFase({ titulo: novaFase.titulo.trim(), resumo: novaFase.resumo.trim(), numero: String(fases.length + 1) })
+    await criarFase({ titulo: novaFase.titulo.trim(), resumo: novaFase.resumo.trim(), numero: String(fasesLocal.length + 1) })
     setNovaFase({ titulo: '', resumo: '' })
   }
 
-  const isInitialLoading = loading && fases.length === 0
+  const isInitialLoading = loading && fasesLocal.length === 0
 
   if (isInitialLoading) {
     return (
@@ -147,7 +210,7 @@ export const Painel = ({ isAdmin }: PainelProps) => {
           />
           <Filters ativo={filtro} onChange={setFiltro} />
           <Trilha
-            fases={fases}
+            fases={fasesLocal}
             estado={estado}
             stats={stats}
             filtro={filtro}
@@ -157,6 +220,11 @@ export const Painel = ({ isAdmin }: PainelProps) => {
             onToggleObs={handleToggleObs}
             onSaveObservacao={handleSaveObservacao}
             criarTarefa={handleCriarTarefa}
+            onDeleteTarefa={handleDeletarTarefa}
+            onEditTarefa={handleEditarTarefa}
+            onDeleteFase={handleDeletarFase}
+            onEditFase={handleEditarFase}
+            onDeleteMaterial={(id) => { void handleDeletarMaterial(id) }}
           />
           {isAdmin && (
             <>

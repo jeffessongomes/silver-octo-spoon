@@ -27,7 +27,9 @@
       "Bash(git push *)",
       "Bash(nvm use *)",
       "Bash(ls /Users/jeffessongomes/.nvm/versions/node/)",
-      "Read(//Users/jeffessongomes/.nvm/versions/node/**)"
+      "Read(//Users/jeffessongomes/.nvm/versions/node/**)",
+      "Bash(npx tsc *)",
+      "Bash(nvm list *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\jeffesson.almeida\\Documents\\Projetos\\silver-octo-spoon\\src\\features\\panel"
