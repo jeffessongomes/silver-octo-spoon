@@ -2,15 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import type { TarefaAPI, ToggleTarefaResponse } from '../types'
 
-const { mockApiPatch, mockApiPost } = vi.hoisted(() => ({
+const { mockApiPatch, mockApiPost, mockApiDelete } = vi.hoisted(() => ({
   mockApiPatch: vi.fn(),
   mockApiPost: vi.fn(),
+  mockApiDelete: vi.fn(),
 }))
 
 vi.mock('../../../lib/api', () => ({
   api: {
     patch: mockApiPatch,
     post: mockApiPost,
+    delete: mockApiDelete,
   },
 }))
 
@@ -128,6 +130,128 @@ describe('useTarefasAPI', () => {
       })
 
       expect(result.current.toggling.size).toBe(0)
+    })
+  })
+
+  describe('deletarTarefa (DELETE)', () => {
+    it('should call onSuccess after successful DELETE', async () => {
+      mockApiDelete.mockResolvedValue({})
+      const useTarefasAPI = await getHook()
+      const onSuccess = vi.fn()
+      const onError = vi.fn()
+
+      const { result } = renderHook(() => useTarefasAPI('estefania'))
+
+      await act(async () => {
+        await result.current.deletarTarefa('tarefa-001', onSuccess, onError)
+      })
+
+      expect(onSuccess).toHaveBeenCalledOnce()
+      expect(onError).not.toHaveBeenCalled()
+    })
+
+    it('should call onSuccess when DELETE returns 404 (already deleted)', async () => {
+      const err = Object.assign(new Error('Not Found'), { response: { status: 404 } })
+      mockApiDelete.mockRejectedValue(err)
+      const useTarefasAPI = await getHook()
+      const onSuccess = vi.fn()
+      const onError = vi.fn()
+
+      const { result } = renderHook(() => useTarefasAPI('estefania'))
+
+      await act(async () => {
+        await result.current.deletarTarefa('tarefa-001', onSuccess, onError)
+      })
+
+      expect(onSuccess).toHaveBeenCalledOnce()
+      expect(onError).not.toHaveBeenCalled()
+    })
+
+    it('should call onError when DELETE fails with non-404 error', async () => {
+      const err = Object.assign(new Error('Server error'), { response: { status: 500 } })
+      mockApiDelete.mockRejectedValue(err)
+      const useTarefasAPI = await getHook()
+      const onSuccess = vi.fn()
+      const onError = vi.fn()
+
+      const { result } = renderHook(() => useTarefasAPI('estefania'))
+
+      await act(async () => {
+        await result.current.deletarTarefa('tarefa-001', onSuccess, onError)
+      })
+
+      expect(onError).toHaveBeenCalledOnce()
+      expect(onSuccess).not.toHaveBeenCalled()
+    })
+
+    it('should add tarefaId to deleting Set during DELETE and remove after', async () => {
+      let resolveDelete!: (value: unknown) => void
+      mockApiDelete.mockReturnValue(new Promise((r) => { resolveDelete = r }))
+      const useTarefasAPI = await getHook()
+
+      const { result } = renderHook(() => useTarefasAPI('estefania'))
+
+      act(() => {
+        void result.current.deletarTarefa('tarefa-001', vi.fn(), vi.fn())
+      })
+
+      expect(result.current.deleting.has('tarefa-001')).toBe(true)
+
+      await act(async () => { resolveDelete({}) })
+
+      expect(result.current.deleting.has('tarefa-001')).toBe(false)
+    })
+  })
+
+  describe('editarTarefa (PATCH texto)', () => {
+    it('should call onSuccess with updated tarefa after PATCH', async () => {
+      const updatedTarefa = createTarefaAPI({ texto: 'Texto atualizado com Juliana' })
+      mockApiPatch.mockResolvedValue({ data: { tarefa: updatedTarefa } })
+      const useTarefasAPI = await getHook()
+      const onSuccess = vi.fn<(tarefa: TarefaAPI) => void>()
+
+      const { result } = renderHook(() => useTarefasAPI('estefania'))
+
+      await act(async () => {
+        await result.current.editarTarefa('tarefa-001', { texto: 'Texto atualizado com Juliana' }, onSuccess)
+      })
+
+      expect(onSuccess).toHaveBeenCalledWith(updatedTarefa)
+    })
+
+    it('should add tarefaId to editing Set during PATCH and remove after', async () => {
+      let resolvePatch!: (value: unknown) => void
+      mockApiPatch.mockReturnValue(new Promise((r) => { resolvePatch = r }))
+      const useTarefasAPI = await getHook()
+
+      const { result } = renderHook(() => useTarefasAPI('estefania'))
+
+      act(() => {
+        void result.current.editarTarefa('tarefa-001', { texto: 'Texto' }, vi.fn())
+      })
+
+      await waitFor(() => expect(result.current.editing.has('tarefa-001')).toBe(true))
+
+      await act(async () => {
+        resolvePatch({ data: { tarefa: createTarefaAPI() } })
+      })
+
+      expect(result.current.editing.has('tarefa-001')).toBe(false)
+    })
+
+    it('should not call onSuccess when PATCH fails', async () => {
+      mockApiPatch.mockRejectedValue(new Error('Server error'))
+      const useTarefasAPI = await getHook()
+      const onSuccess = vi.fn()
+
+      const { result } = renderHook(() => useTarefasAPI('estefania'))
+
+      await act(async () => {
+        await result.current.editarTarefa('tarefa-001', { texto: 'Texto' }, onSuccess)
+      })
+
+      expect(onSuccess).not.toHaveBeenCalled()
+      expect(result.current.editing.has('tarefa-001')).toBe(false)
     })
   })
 

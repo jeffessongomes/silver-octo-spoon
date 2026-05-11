@@ -215,4 +215,220 @@ describe('TarefaItem', () => {
       expect(onToggleConcluida).not.toHaveBeenCalled()
     })
   })
+
+  describe('admin actions — delete tarefa', () => {
+    it('should not render delete button when not admin', () => {
+      renderTarefaItem({ onDelete: vi.fn() }, { isAdmin: false })
+
+      expect(screen.queryByTestId('btn-delete-tarefa-t1-1')).not.toBeInTheDocument()
+    })
+
+    it('should not render delete button when onDelete is not provided', () => {
+      renderTarefaItem()
+
+      expect(screen.queryByTestId('btn-delete-tarefa-t1-1')).not.toBeInTheDocument()
+    })
+
+    it('should render delete button when admin and onDelete provided', () => {
+      renderTarefaItem({ onDelete: vi.fn() })
+
+      expect(screen.getByTestId('btn-delete-tarefa-t1-1')).toBeInTheDocument()
+    })
+
+    it('should show confirmation dialog when delete button is clicked', async () => {
+      const user = userEvent.setup()
+      renderTarefaItem({ onDelete: vi.fn() })
+
+      await user.click(screen.getByTestId('btn-delete-tarefa-t1-1'))
+
+      expect(screen.getByTestId('dialog-confirm-delete-tarefa-t1-1')).toBeInTheDocument()
+    })
+
+    it('should not call onDelete directly when delete button is clicked', async () => {
+      const user = userEvent.setup()
+      const onDelete = vi.fn()
+      renderTarefaItem({ onDelete })
+
+      await user.click(screen.getByTestId('btn-delete-tarefa-t1-1'))
+
+      expect(onDelete).not.toHaveBeenCalled()
+    })
+
+    it('should call onDelete with tarefa id when confirmation is confirmed', async () => {
+      const user = userEvent.setup()
+      const onDelete = vi.fn()
+      renderTarefaItem({ onDelete })
+
+      await user.click(screen.getByTestId('btn-delete-tarefa-t1-1'))
+      await user.click(screen.getByTestId('btn-confirm-delete-tarefa-t1-1'))
+
+      expect(onDelete).toHaveBeenCalledWith('t1-1')
+    })
+
+    it('should hide dialog without calling onDelete when cancel is clicked', async () => {
+      const user = userEvent.setup()
+      const onDelete = vi.fn()
+      renderTarefaItem({ onDelete })
+
+      await user.click(screen.getByTestId('btn-delete-tarefa-t1-1'))
+      await user.click(screen.getByTestId('btn-cancel-delete-tarefa-t1-1'))
+
+      expect(onDelete).not.toHaveBeenCalled()
+      expect(screen.queryByTestId('dialog-confirm-delete-tarefa-t1-1')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('admin actions — edit tarefa inline', () => {
+    it('should not open edit mode when not admin', async () => {
+      const user = userEvent.setup()
+      renderTarefaItem({ onEdit: vi.fn() }, { isAdmin: false })
+
+      await user.click(screen.getByText('Combinou com a Juliana sobre o relatório'))
+
+      expect(screen.queryByTestId('input-edit-tarefa-t1-1')).not.toBeInTheDocument()
+    })
+
+    it('should not open edit mode when onEdit is not provided', async () => {
+      const user = userEvent.setup()
+      renderTarefaItem()
+
+      await user.click(screen.getByText('Combinou com a Juliana sobre o relatório'))
+
+      expect(screen.queryByTestId('input-edit-tarefa-t1-1')).not.toBeInTheDocument()
+    })
+
+    it('should show input with current text when admin clicks on task text', async () => {
+      const user = userEvent.setup()
+      renderTarefaItem({ onEdit: vi.fn() })
+
+      await user.click(screen.getByTestId('task-text-t1-1'))
+
+      expect(screen.getByTestId('input-edit-tarefa-t1-1')).toBeInTheDocument()
+      expect(screen.getByTestId('input-edit-tarefa-t1-1')).toHaveValue('Combinou com a Juliana sobre o relatório')
+    })
+  })
+
+  describe('when editing task text — debounce auto-save', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('should show saving indicator while debounce is pending', () => {
+      const onEdit = vi.fn()
+      renderTarefaItem({ onEdit })
+
+      act(() => { fireEvent.click(screen.getByTestId('task-text-t1-1')) })
+      act(() => {
+        fireEvent.change(screen.getByTestId('input-edit-tarefa-t1-1'), {
+          target: { value: 'Novo texto válido aqui' },
+        })
+      })
+
+      expect(screen.getByTestId('status-edit-tarefa-t1-1')).toHaveTextContent('Salvando...')
+    })
+
+    it('should call onEdit after debounce delay with valid text', () => {
+      const onEdit = vi.fn()
+      renderTarefaItem({ onEdit })
+
+      act(() => { fireEvent.click(screen.getByTestId('task-text-t1-1')) })
+      act(() => {
+        fireEvent.change(screen.getByTestId('input-edit-tarefa-t1-1'), {
+          target: { value: 'Texto válido novo' },
+        })
+      })
+      act(() => { vi.advanceTimersByTime(600) })
+
+      expect(onEdit).toHaveBeenCalledWith('t1-1', { texto: 'Texto válido novo' })
+    })
+
+    it('should not call onEdit when text is unchanged', () => {
+      const onEdit = vi.fn()
+      renderTarefaItem({ onEdit })
+
+      act(() => { fireEvent.click(screen.getByTestId('task-text-t1-1')) })
+      act(() => {
+        fireEvent.change(screen.getByTestId('input-edit-tarefa-t1-1'), {
+          target: { value: 'Combinou com a Juliana sobre o relatório' },
+        })
+      })
+      act(() => { vi.advanceTimersByTime(600) })
+
+      expect(onEdit).not.toHaveBeenCalled()
+    })
+
+    it('should not call onEdit when text has fewer than 3 chars', () => {
+      const onEdit = vi.fn()
+      renderTarefaItem({ onEdit })
+
+      act(() => { fireEvent.click(screen.getByTestId('task-text-t1-1')) })
+      act(() => {
+        fireEvent.change(screen.getByTestId('input-edit-tarefa-t1-1'), {
+          target: { value: 'ab' },
+        })
+      })
+      act(() => { vi.advanceTimersByTime(600) })
+
+      expect(onEdit).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when editing task text — keyboard and blur', () => {
+    it('should cancel and restore original text on Escape', async () => {
+      const user = userEvent.setup()
+      const onEdit = vi.fn()
+      renderTarefaItem({ onEdit })
+
+      await user.click(screen.getByTestId('task-text-t1-1'))
+      await user.clear(screen.getByTestId('input-edit-tarefa-t1-1'))
+      await user.type(screen.getByTestId('input-edit-tarefa-t1-1'), 'Texto temporário')
+      await user.keyboard('{Escape}')
+
+      expect(onEdit).not.toHaveBeenCalled()
+      expect(screen.queryByTestId('input-edit-tarefa-t1-1')).not.toBeInTheDocument()
+      expect(screen.getByText('Combinou com a Juliana sobre o relatório')).toBeInTheDocument()
+    })
+
+    it('should call onEdit immediately on blur with valid text', async () => {
+      const user = userEvent.setup()
+      const onEdit = vi.fn()
+      renderTarefaItem({ onEdit })
+
+      await user.click(screen.getByTestId('task-text-t1-1'))
+      await user.clear(screen.getByTestId('input-edit-tarefa-t1-1'))
+      await user.type(screen.getByTestId('input-edit-tarefa-t1-1'), 'Texto salvo no blur')
+      fireEvent.blur(screen.getByTestId('input-edit-tarefa-t1-1'))
+
+      expect(onEdit).toHaveBeenCalledWith('t1-1', { texto: 'Texto salvo no blur' })
+    })
+
+    it('should not call onEdit on blur when text is invalid', async () => {
+      const user = userEvent.setup()
+      const onEdit = vi.fn()
+      renderTarefaItem({ onEdit })
+
+      await user.click(screen.getByTestId('task-text-t1-1'))
+      await user.clear(screen.getByTestId('input-edit-tarefa-t1-1'))
+      await user.type(screen.getByTestId('input-edit-tarefa-t1-1'), 'ab')
+      fireEvent.blur(screen.getByTestId('input-edit-tarefa-t1-1'))
+
+      expect(onEdit).not.toHaveBeenCalled()
+    })
+
+    it('should close edit mode after saving on blur', async () => {
+      const user = userEvent.setup()
+      renderTarefaItem({ onEdit: vi.fn() })
+
+      await user.click(screen.getByTestId('task-text-t1-1'))
+      await user.clear(screen.getByTestId('input-edit-tarefa-t1-1'))
+      await user.type(screen.getByTestId('input-edit-tarefa-t1-1'), 'Texto salvo no blur')
+      fireEvent.blur(screen.getByTestId('input-edit-tarefa-t1-1'))
+
+      expect(screen.queryByTestId('input-edit-tarefa-t1-1')).not.toBeInTheDocument()
+    })
+  })
 })

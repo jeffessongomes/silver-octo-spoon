@@ -2,15 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import type { FaseAPI, TarefaAPI } from '../types'
 
-const { mockApiGet, mockApiPost } = vi.hoisted(() => ({
+const { mockApiGet, mockApiPost, mockApiPatch, mockApiDelete } = vi.hoisted(() => ({
   mockApiGet: vi.fn(),
   mockApiPost: vi.fn(),
+  mockApiPatch: vi.fn(),
+  mockApiDelete: vi.fn(),
 }))
 
 vi.mock('../../../lib/api', () => ({
   api: {
     get: mockApiGet,
     post: mockApiPost,
+    patch: mockApiPatch,
+    delete: mockApiDelete,
   },
 }))
 
@@ -128,6 +132,119 @@ describe('useFasesAPI', () => {
       act(() => { result.current.fetchFases() })
       await waitFor(() => expect(result.current.error).toBeNull())
       expect(result.current.fases).toHaveLength(1)
+    })
+  })
+
+  describe('deletarFase (DELETE)', () => {
+    it('should call onSuccess after successful DELETE', async () => {
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([]) })
+      mockApiDelete.mockResolvedValue({})
+      const useFasesAPI = await getHook()
+      const onSuccess = vi.fn()
+
+      const { result } = renderHook(() => useFasesAPI('estefania'))
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      await act(async () => {
+        await result.current.deletarFase('fase-1', onSuccess)
+      })
+
+      expect(onSuccess).toHaveBeenCalledOnce()
+    })
+
+    it('should call onSuccess when DELETE returns 404 (already deleted)', async () => {
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([]) })
+      const err = Object.assign(new Error('Not Found'), { response: { status: 404 } })
+      mockApiDelete.mockRejectedValue(err)
+      const useFasesAPI = await getHook()
+      const onSuccess = vi.fn()
+
+      const { result } = renderHook(() => useFasesAPI('estefania'))
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      await act(async () => {
+        await result.current.deletarFase('fase-1', onSuccess)
+      })
+
+      expect(onSuccess).toHaveBeenCalledOnce()
+    })
+
+    it('should add faseId to deletingFase Set during DELETE and remove after', async () => {
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([]) })
+      let resolveDelete!: (value: unknown) => void
+      mockApiDelete.mockReturnValue(new Promise((r) => { resolveDelete = r }))
+      const useFasesAPI = await getHook()
+
+      const { result } = renderHook(() => useFasesAPI('estefania'))
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      act(() => {
+        void result.current.deletarFase('fase-1', vi.fn())
+      })
+
+      expect(result.current.deletingFase.has('fase-1')).toBe(true)
+
+      await act(async () => { resolveDelete({}) })
+
+      expect(result.current.deletingFase.has('fase-1')).toBe(false)
+    })
+  })
+
+  describe('editarFase (PATCH)', () => {
+    it('should call onSuccess with updated fase after PATCH', async () => {
+      const faseAtualizada = createFaseAPI({ titulo: 'Título Atualizado com Sucesso' })
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([]) })
+      mockApiPatch.mockResolvedValue({ data: faseAtualizada })
+      const useFasesAPI = await getHook()
+      const onSuccess = vi.fn<(fase: FaseAPI) => void>()
+
+      const { result } = renderHook(() => useFasesAPI('estefania'))
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      await act(async () => {
+        await result.current.editarFase('fase-1', { titulo: 'Título Atualizado com Sucesso' }, onSuccess)
+      })
+
+      expect(onSuccess).toHaveBeenCalledWith(faseAtualizada)
+    })
+
+    it('should add faseId to editingFase Set during PATCH and remove after', async () => {
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([]) })
+      let resolvePatch!: (value: unknown) => void
+      mockApiPatch.mockReturnValue(new Promise((r) => { resolvePatch = r }))
+      const useFasesAPI = await getHook()
+
+      const { result } = renderHook(() => useFasesAPI('estefania'))
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      act(() => {
+        void result.current.editarFase('fase-1', { titulo: 'Novo título' }, vi.fn())
+      })
+
+      await waitFor(() => expect(result.current.editingFase.has('fase-1')).toBe(true))
+
+      await act(async () => {
+        resolvePatch({ data: createFaseAPI() })
+      })
+
+      expect(result.current.editingFase.has('fase-1')).toBe(false)
+    })
+
+    it('should not call onSuccess when PATCH fails', async () => {
+      mockApiGet.mockResolvedValue({ data: createPainelResponse([]) })
+      mockApiPatch.mockRejectedValue(new Error('Server error'))
+      const useFasesAPI = await getHook()
+      const onSuccess = vi.fn()
+
+      const { result } = renderHook(() => useFasesAPI('estefania'))
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      await act(async () => {
+        await result.current.editarFase('fase-1', { titulo: 'Título' }, onSuccess)
+      })
+
+      expect(onSuccess).not.toHaveBeenCalled()
+      expect(result.current.editingFase.has('fase-1')).toBe(false)
     })
   })
 

@@ -70,6 +70,7 @@ export class PainelService {
 
   private mapMaterialToDTO(m: MaterialRow): Material {
     return {
+      id: m.id,
       nome: m.nome,
       tipo: m.tipo,
       url: m.url ?? '',

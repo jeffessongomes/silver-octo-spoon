@@ -9,6 +9,7 @@ export interface Tarefa {
 }
 
 export interface Material {
+  id?: string
   nome: string
   tipo: MaterialTipo
   url: string
@@ -61,7 +62,7 @@ export interface FaseAPI {
   status: FaseStatus
   tipo?: FaseTipo
   tarefas: TarefaAPI[]
-  materiais: Material[]
+  materiais: MaterialAPI[]
   cliente_id?: string
   ordem?: number
 }
@@ -104,6 +105,18 @@ export interface ImportarFaseInput {
   tipo?: FaseTipo
   tarefas?: ImportarTarefaInput[]
   materiais?: { nome: string; tipo: MaterialTipo; url: string }[]
+}
+
+export interface EditarTarefaInput {
+  texto: string
+}
+
+export interface EditarFaseInput {
+  titulo?: string
+  resumo?: string
+  numero?: string
+  status?: FaseStatus
+  tipo?: FaseTipo | null
 }
 
 export interface ImportarPainelInput {

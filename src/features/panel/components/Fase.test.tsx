@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, userEvent } from '../../../test/test-utils'
 import { Fase } from './Fase'
-import type { FaseAPI, TarefaAPI, EstadoPainel } from '../types'
+import type { FaseAPI, TarefaAPI, EstadoPainel, MaterialAPI, EditarFaseInput } from '../types'
 
 const createTarefaAPI = (overrides: Partial<TarefaAPI> = {}): TarefaAPI => ({
   id: 't1-1',
@@ -10,6 +10,17 @@ const createTarefaAPI = (overrides: Partial<TarefaAPI> = {}): TarefaAPI => ({
   cliente_id: 'estefania',
   concluida: false,
   observacao: null,
+  ordem: 0,
+  ...overrides,
+})
+
+const createMaterialAPI = (overrides: Partial<MaterialAPI> = {}): MaterialAPI => ({
+  id: 'mat-001',
+  nome: 'Política de Alunos Fundadores',
+  tipo: 'PDF',
+  url: '',
+  cliente_id: 'estefania',
+  fase_id: 'fase-1',
   ordem: 0,
   ...overrides,
 })
@@ -24,7 +35,7 @@ const createFase = (overrides: Partial<FaseAPI> = {}): FaseAPI => ({
     createTarefaAPI({ id: 't1-1' }),
     createTarefaAPI({ id: 't1-2', texto: 'Preparou os materiais da reunião' }),
   ],
-  materiais: [{ nome: 'Política de Alunos Fundadores', tipo: 'PDF', url: '' }],
+  materiais: [createMaterialAPI()],
   cliente_id: 'estefania',
   ordem: 0,
   ...overrides,
@@ -218,6 +229,173 @@ describe('Fase', () => {
       })
 
       expect(screen.getByTestId('chk-toggle-tarefa-t1-1')).toHaveAttribute('aria-disabled', 'true')
+    })
+  })
+
+  describe('admin actions — delete fase', () => {
+    it('should not render delete button when not admin', () => {
+      render(<Fase
+        fase={createFase()}
+        concluidas={0}
+        total={2}
+        statusVisual="pending"
+        expandida={false}
+        estado={createEstado()}
+        filtro="todas"
+        toggling={new Set()}
+        onToggleFase={vi.fn()}
+        onToggleTarefa={vi.fn()}
+        onToggleObs={vi.fn()}
+        onSaveObservacao={vi.fn()}
+        criarTarefa={vi.fn()}
+        onDeleteFase={vi.fn()}
+      />, { isAdmin: false })
+
+      expect(screen.queryByTestId('btn-delete-fase-fase-1')).not.toBeInTheDocument()
+    })
+
+    it('should render delete button when admin and onDeleteFase provided', () => {
+      renderFase({ onDeleteFase: vi.fn() })
+
+      expect(screen.getByTestId('btn-delete-fase-fase-1')).toBeInTheDocument()
+    })
+
+    it('should not trigger onToggleFase when delete button is clicked', async () => {
+      const user = userEvent.setup()
+      const onToggleFase = vi.fn()
+      renderFase({ onDeleteFase: vi.fn(), onToggleFase })
+
+      await user.click(screen.getByTestId('btn-delete-fase-fase-1'))
+
+      expect(onToggleFase).not.toHaveBeenCalled()
+    })
+
+    it('should show confirmation dialog with task count when delete is clicked', async () => {
+      const user = userEvent.setup()
+      renderFase({ onDeleteFase: vi.fn() })
+
+      await user.click(screen.getByTestId('btn-delete-fase-fase-1'))
+
+      expect(screen.getByTestId('dialog-confirm-delete-fase-fase-1')).toBeInTheDocument()
+      expect(screen.getByText(/2 tarefa/i)).toBeInTheDocument()
+    })
+
+    it('should show adapted message when fase has no tasks', async () => {
+      const user = userEvent.setup()
+      renderFase({ onDeleteFase: vi.fn(), fase: createFase({ tarefas: [] }) })
+
+      await user.click(screen.getByTestId('btn-delete-fase-fase-1'))
+
+      expect(screen.getByTestId('dialog-confirm-delete-fase-fase-1')).toBeInTheDocument()
+      expect(screen.getByText(/nenhuma tarefa/i)).toBeInTheDocument()
+    })
+
+    it('should call onDeleteFase when confirm button is clicked', async () => {
+      const user = userEvent.setup()
+      const onDeleteFase = vi.fn()
+      renderFase({ onDeleteFase })
+
+      await user.click(screen.getByTestId('btn-delete-fase-fase-1'))
+      await user.click(screen.getByTestId('btn-confirm-delete-fase-fase-1'))
+
+      expect(onDeleteFase).toHaveBeenCalledWith('fase-1')
+    })
+
+    it('should close dialog without calling onDeleteFase when cancel is clicked', async () => {
+      const user = userEvent.setup()
+      const onDeleteFase = vi.fn()
+      renderFase({ onDeleteFase })
+
+      await user.click(screen.getByTestId('btn-delete-fase-fase-1'))
+      await user.click(screen.getByTestId('btn-cancel-delete-fase-fase-1'))
+
+      expect(onDeleteFase).not.toHaveBeenCalled()
+      expect(screen.queryByTestId('dialog-confirm-delete-fase-fase-1')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('admin actions — edit fase', () => {
+    it('should not render edit button when not admin', () => {
+      render(<Fase
+        fase={createFase()}
+        concluidas={0}
+        total={2}
+        statusVisual="pending"
+        expandida={false}
+        estado={createEstado()}
+        filtro="todas"
+        toggling={new Set()}
+        onToggleFase={vi.fn()}
+        onToggleTarefa={vi.fn()}
+        onToggleObs={vi.fn()}
+        onSaveObservacao={vi.fn()}
+        criarTarefa={vi.fn()}
+        onEditFase={vi.fn()}
+      />, { isAdmin: false })
+
+      expect(screen.queryByTestId('btn-edit-fase-fase-1')).not.toBeInTheDocument()
+    })
+
+    it('should render edit button when admin and onEditFase provided', () => {
+      renderFase({ onEditFase: vi.fn() })
+
+      expect(screen.getByTestId('btn-edit-fase-fase-1')).toBeInTheDocument()
+    })
+
+    it('should not trigger onToggleFase when edit button is clicked', async () => {
+      const user = userEvent.setup()
+      const onToggleFase = vi.fn()
+      renderFase({ onEditFase: vi.fn(), onToggleFase })
+
+      await user.click(screen.getByTestId('btn-edit-fase-fase-1'))
+
+      expect(onToggleFase).not.toHaveBeenCalled()
+    })
+
+    it('should show edit form with current values when edit button is clicked', async () => {
+      const user = userEvent.setup()
+      renderFase({ onEditFase: vi.fn() })
+
+      await user.click(screen.getByTestId('btn-edit-fase-fase-1'))
+
+      expect(screen.getByTestId('input-titulo-fase-fase-1')).toHaveValue('Arrumar a Casa')
+      expect(screen.getByTestId('input-resumo-fase-fase-1')).toHaveValue('Meta de receita: R$2.000/mês')
+    })
+
+    it('should call onEditFase with updated fields when save is clicked', async () => {
+      const user = userEvent.setup()
+      const onEditFase = vi.fn<(id: string, input: EditarFaseInput) => void>()
+      renderFase({ onEditFase })
+
+      await user.click(screen.getByTestId('btn-edit-fase-fase-1'))
+      await user.clear(screen.getByTestId('input-titulo-fase-fase-1'))
+      await user.type(screen.getByTestId('input-titulo-fase-fase-1'), 'Título Atualizado')
+      await user.click(screen.getByTestId('btn-save-edit-fase-fase-1'))
+
+      expect(onEditFase).toHaveBeenCalledWith('fase-1', expect.objectContaining({ titulo: 'Título Atualizado' }))
+    })
+
+    it('should hide edit form without calling onEditFase when cancel is clicked', async () => {
+      const user = userEvent.setup()
+      const onEditFase = vi.fn()
+      renderFase({ onEditFase })
+
+      await user.click(screen.getByTestId('btn-edit-fase-fase-1'))
+      await user.click(screen.getByTestId('btn-cancel-edit-fase-fase-1'))
+
+      expect(onEditFase).not.toHaveBeenCalled()
+      expect(screen.queryByTestId('input-titulo-fase-fase-1')).not.toBeInTheDocument()
+    })
+
+    it('should disable save button when titulo has fewer than 3 characters', async () => {
+      const user = userEvent.setup()
+      renderFase({ onEditFase: vi.fn() })
+
+      await user.click(screen.getByTestId('btn-edit-fase-fase-1'))
+      await user.clear(screen.getByTestId('input-titulo-fase-fase-1'))
+      await user.type(screen.getByTestId('input-titulo-fase-fase-1'), 'ab')
+
+      expect(screen.getByTestId('btn-save-edit-fase-fase-1')).toBeDisabled()
     })
   })
 
